@@ -1,0 +1,27 @@
+launched pid=18848
+main window found
+after sphere: 共 1 个点云
+  combo items=4 target=1
+after cube: 共 2 个点云
+list items=2  active source=示例-球体 (Sample)
+  found VoxelSizeBox OK
+volume result: 体素体积: 2988.625 m³ (2988625000000 mm³)
+凸包体积: 526791.062 m³ (526791061868166 mm³)
+  found ClipModeCombo OK
+  combo items=3 target=1
+  found ClipXmin OK
+after clip boundsX: X: -49.28 ~ 4.68
+after clearclip boundsX: X: -49.28 ~ 49.16
+DB status: 数据库记录数: 23
+  found DbListBox OK
+DB list items=5
+  found MqttConnect OK
+MQTT after connect: 已连接
+MQTT after publish: 已发布
+  found BtnShowAll OK
+  found BtnHideAll OK
+after HideAll count: 共 2 个点云 (隐藏不删列表项，仍应为 2)
+after ShowAll count: 共 2 个点云
+after clear all: 共 0 个点云
+crash_err exists during test: False
+app closed

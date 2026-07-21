@@ -1,0 +1,49 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcValueDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             mc:Ignorable="d"
+             d:DesignHeight="80" d:DesignWidth="180"
+             Background="Transparent" BorderThickness="0">
+
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}" Padding="4,2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Text="{Binding Label, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}}"
+                       Visibility="{Binding ShowLabel, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}, Converter={StaticResource BoolToVis}}"
+                       Style="{StaticResource PlcSecondaryText}"
+                       Margin="0,0,0,2"/>
+
+            <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DisplayText, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}}"
+                           FontFamily="{StaticResource PlcFontFamily}"
+                           FontSize="{Binding ValueFontSize, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}}"
+                           FontWeight="Bold"
+                           Foreground="{Binding ValueForeground, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Unit, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}}"
+                           Visibility="{Binding ShowUnit, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}, Converter={StaticResource BoolToVis}}"
+                           FontFamily="{StaticResource PlcFontFamily}"
+                           FontSize="{Binding UnitFontSize, RelativeSource={RelativeSource AncestorType=local:PlcValueDisplay}}"
+                           Foreground="{StaticResource PlcTextSecondaryBrush}"
+                           VerticalAlignment="Bottom" Margin="5,0,0,2"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</local:PlcControlBase>

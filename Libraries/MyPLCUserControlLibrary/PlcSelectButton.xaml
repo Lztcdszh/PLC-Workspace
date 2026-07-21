@@ -1,0 +1,68 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcSelectButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             mc:Ignorable="d"
+             d:DesignHeight="20" d:DesignWidth="56"
+             Background="#ECF0F5"
+             BorderBrush="#C0C4CC"
+             BorderThickness="1"
+             Cursor="Hand"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
+
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <UserControl.Template>
+        <ControlTemplate TargetType="local:PlcSelectButton">
+            <Border x:Name="PART_Border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}"
+                    SnapsToDevicePixels="True">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.12" Color="#20242B"/>
+                </Border.Effect>
+                <Grid>
+                    <ContentPresenter x:Name="PART_Content"
+                                      Content="{TemplateBinding ButtonText}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      TextElement.FontSize="{TemplateBinding FontSize}"
+                                      TextElement.FontWeight="Bold"
+                                      TextElement.Foreground="#303133"/>
+                    <!-- 按下遮罩层 -->
+                    <Border x:Name="Overlay"
+                            Background="#30000000"
+                            Opacity="0"
+                            IsHitTestVisible="False"
+                            CornerRadius="{TemplateBinding CornerRadius}"/>
+                </Grid>
+            </Border>
+
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="PART_Border" Property="BorderBrush" Value="{StaticResource PlcAccentBrush}"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter TargetName="PART_Border" Property="Opacity" Value="0.5"/>
+                </Trigger>
+                <!-- 当前 PLC 目标值等于本按钮写入值时高亮（被选定为当前目标） -->
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter TargetName="PART_Border" Property="Background" Value="#67C23A"/>
+                    <Setter TargetName="PART_Border" Property="BorderBrush" Value="#67C23A"/>
+                    <Setter TargetName="PART_Content" Property="TextElement.Foreground" Value="White"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+    </UserControl.Template>
+</local:PlcControlBase>

@@ -1,0 +1,110 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcNumericInput"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             Background="Transparent" BorderThickness="0">
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+            <!-- 软键盘按钮统一样式（圆角 + 悬停反馈） -->
+            <Style TargetType="Button">
+                <Setter Property="Margin" Value="3"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontFamily" Value="{StaticResource PlcFontFamily}"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
+                <Setter Property="Background" Value="{StaticResource PlcSurfaceBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource PlcBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PlcSurfaceDeepBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="BorderBrush" Value="{StaticResource PlcAccentBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="PART_Caption"
+                   Grid.Row="0"
+                   Text="{Binding Label, RelativeSource={RelativeSource AncestorType=local:PlcNumericInput}}"
+                   Style="{StaticResource PlcSecondaryText}" Margin="0,0,0,2" FontSize="10"
+                   Visibility="{Binding ShowCaption, RelativeSource={RelativeSource AncestorType=local:PlcNumericInput}, Converter={StaticResource BoolToVis}}"/>
+
+        <Border x:Name="PART_Host" Grid.Row="1"
+                Style="{StaticResource PlcInputBorder}" Effect="{StaticResource PlcSoftShadow}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="PART_Display" Grid.Column="0" BorderThickness="0" Background="Transparent"
+                         IsReadOnly="True" VerticalContentAlignment="Center" FontSize="15" FontWeight="Bold"
+                         FontFamily="{StaticResource PlcFontFamily}"
+                         Foreground="{StaticResource PlcTextBrush}" Text="—" Margin="5,2"/>
+                <TextBlock x:Name="PART_Unit" Grid.Column="1"
+                           Text="{Binding Unit, RelativeSource={RelativeSource AncestorType=local:PlcNumericInput}}"
+                           Style="{StaticResource PlcSecondaryText}" Margin="0,0,2,0"/>
+                <!-- 可编辑提示图标：点击输入框区域即可弹出软键盘 -->
+                <TextBlock x:Name="PART_EditHint" Grid.Column="2" Text="✎" FontSize="15"
+                           Foreground="{StaticResource PlcAccentBrush}" VerticalAlignment="Center"
+                           Margin="2,0,8,0" ToolTip="点击可输入" Cursor="Hand"/>
+            </Grid>
+        </Border>
+
+        <!-- 弹出式数字软键盘 -->
+        <Popup x:Name="PART_Keypad" Grid.Row="1" PlacementTarget="{Binding ElementName=PART_Host}" Placement="Bottom"
+               StaysOpen="False" AllowsTransparency="True" Width="246">
+            <Border Background="{StaticResource PlcSurfaceBrush}" BorderBrush="{StaticResource PlcBorderBrush}"
+                    BorderThickness="1" CornerRadius="10" Padding="10" Effect="{StaticResource PlcShadow}">
+                <StackPanel>
+                    <TextBox x:Name="PART_Pending" IsReadOnly="True" FontSize="20" FontWeight="Bold"
+                             FontFamily="{StaticResource PlcFontFamily}"
+                             HorizontalContentAlignment="Right" Margin="0,0,0,8" Padding="8"
+                             BorderBrush="{StaticResource PlcBorderBrush}" BorderThickness="1"/>
+                    <Grid x:Name="PART_Keys" ShowGridLines="False">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="44"/>
+                        </Grid.RowDefinitions>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</local:PlcControlBase>

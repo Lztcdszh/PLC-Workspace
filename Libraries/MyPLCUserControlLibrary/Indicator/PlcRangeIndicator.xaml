@@ -1,0 +1,37 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcRangeIndicator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             Background="Transparent" BorderThickness="0"
+             ToolTip="{Binding ToolTipText, RelativeSource={RelativeSource Self}}">
+
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <local:RangeColorConverter x:Key="RangeColorConverter"/>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Grid>
+        <Ellipse x:Name="PART_Ellipse"
+                 Stroke="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
+                 StrokeThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
+                 Fill="{Binding CurrentBrush, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}, FallbackValue=Gray}">
+            <Ellipse.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.45" Color="#000000"/>
+            </Ellipse.Effect>
+        </Ellipse>
+        <TextBlock x:Name="PART_ValueText"
+                   Text="{Binding DisplayText, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontFamily="{StaticResource PlcFontFamily}"
+                   FontSize="{Binding TextFontSize, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
+                   FontWeight="SemiBold"
+                   Foreground="{Binding TextForeground, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
+                   Visibility="{Binding ShowValue, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+    </Grid>
+</local:PlcControlBase>

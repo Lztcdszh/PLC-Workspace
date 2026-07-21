@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>霓虹边境 · 3D 射击</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #05070f; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; color: #e8f0ff; }
+  #game { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  /* ---- 准星 ---- */
+  #crosshair {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 26px; height: 26px; pointer-events: none; z-index: 20; opacity: 0.9;
+  }
+  #crosshair::before, #crosshair::after {
+    content: ""; position: absolute; background: #5fe3ff; box-shadow: 0 0 6px #5fe3ff;
+  }
+  #crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+  #crosshair::after  { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+  #hitmarker {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(45deg);
+    width: 22px; height: 22px; border: 2px solid #ff4d4d; opacity: 0; pointer-events: none; z-index: 21;
+  }
+
+  /* ---- HUD ---- */
+  .hud { position: fixed; z-index: 15; pointer-events: none; text-shadow: 0 1px 4px #000; }
+  #hud-tl { left: 22px; top: 20px; }
+  #hud-tr { right: 22px; top: 20px; text-align: right; }
+  #hud-bc { left: 50%; bottom: 26px; transform: translateX(-50%); text-align: center; }
+  .label { font-size: 12px; letter-spacing: 2px; color: #8fb6d6; text-transform: uppercase; }
+  .hpbar { width: 240px; height: 16px; margin-top: 6px; border: 1px solid #2b4a66; border-radius: 8px; overflow: hidden; background: #0c1622; }
+  .hpfill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff5d5d, #ffd24d); transition: width 0.12s linear; }
+  .big   { font-size: 30px; font-weight: 700; color: #5fe3ff; text-shadow: 0 0 12px rgba(95,227,255,.6); }
+  .mid   { font-size: 18px; font-weight: 600; color: #cfe6ff; }
+  #ammo  { font-size: 26px; font-weight: 700; color: #ffd24d; text-shadow: 0 0 10px rgba(255,210,77,.5); }
+  #reloadHint { font-size: 12px; color: #8fb6d6; margin-top: 4px; height: 14px; }
+
+  /* ---- 低血量红晕 ---- */
+  #vignette {
+    position: fixed; inset: 0; z-index: 12; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, rgba(255,0,0,0) 45%, rgba(255,0,0,.55) 100%);
+    transition: opacity .2s linear;
+  }
+
+  /* ---- 覆盖层 ---- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    background: radial-gradient(ellipse at center, rgba(10,20,40,.82), rgba(3,6,14,.96));
+    backdrop-filter: blur(3px);
+  }
+  .overlay.hidden { display: none; }
+  .title { font-size: 52px; font-weight: 800; letter-spacing: 6px;
+    background: linear-gradient(90deg, #5fe3ff, #b388ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 30px rgba(95,227,255,.25); }
+  .sub { margin-top: 10px; font-size: 15px; color: #9fb8d6; letter-spacing: 1px; }
+  .panel { margin-top: 26px; padding: 22px 30px; border: 1px solid #244063; border-radius: 14px;
+    background: rgba(12,22,38,.6); max-width: 520px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; color: #cfe6ff; text-align: left; }
+  .keys b { color: #5fe3ff; font-weight: 700; }
+  .btn { margin-top: 26px; padding: 14px 46px; font-size: 18px; font-weight: 700; letter-spacing: 3px;
+    color: #04111e; background: linear-gradient(90deg, #5fe3ff, #6ee7b7); border: none; border-radius: 30px;
+    cursor: pointer; box-shadow: 0 0 24px rgba(95,227,255,.4); transition: transform .1s, box-shadow .2s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 0 34px rgba(95,227,255,.7); }
+  .btn:active { transform: translateY(0); }
+  #finalScore { font-size: 40px; font-weight: 800; color: #ffd24d; margin: 8px 0 4px; text-shadow: 0 0 16px rgba(255,210,77,.5); }
+  .waveToast { position: fixed; left: 50%; top: 32%; transform: translate(-50%,-50%); z-index: 18;
+    font-size: 40px; font-weight: 800; letter-spacing: 4px; color: #b388ff; text-shadow: 0 0 22px rgba(179,136,255,.6);
+    opacity: 0; pointer-events: none; transition: opacity .3s; }
+</style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <div id="vignette"></div>
+  <div id="hitmarker"></div>
+
+  <div id="crosshair"></div>
+
+  <div class="hud" id="hud-tl">
+    <div class="label">生命值</div>
+    <div class="hpbar"><div class="hpfill" id="hpfill"></div></div>
+  </div>
+  <div class="hud" id="hud-tr">
+    <div class="label">得分</div>
+    <div class="big" id="score">0</div>
+    <div class="mid" id="wave">第 1 波</div>
+    <div class="mid" id="enemies">剩余敌人 0</div>
+  </div>
+  <div class="hud" id="hud-bc">
+    <div id="ammo">30 / 30</div>
+    <div id="reloadHint"></div>
+  </div>
+
+  <div class="waveToast" id="waveToast"></div>
+
+  <!-- 开始界面 -->
+  <div class="overlay" id="startScreen">
+    <div class="title">霓虹边境</div>
+    <div class="sub">NEON FRONTIER · 第一人称射击</div>
+    <div class="panel">
+      <div class="keys">
+        <b>W A S D</b><span>移动</span>
+        <b>鼠标</b><span>瞄准视角</span>
+        <b>左键</b><span>开火</span>
+        <b>空格</b><span>跳跃</span>
+        <b>R</b><span>换弹</span>
+        <b>Shift</b><span>疾跑</span>
+      </div>
+    </div>
+    <button class="btn" id="startBtn">点击开始</button>
+    <div class="sub" style="margin-top:14px">点击后将锁定鼠标 · 按 Esc 暂停</div>
+  </div>
+
+  <!-- 暂停 -->
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="title" style="font-size:40px">已暂停</div>
+    <button class="btn" id="resumeBtn">点击继续</button>
+  </div>
+
+  <!-- 结束 -->
+  <div class="overlay hidden" id="gameOver">
+    <div class="title" style="font-size:44px;background:linear-gradient(90deg,#ff5d5d,#ffd24d);-webkit-background-clip:text;background-clip:text;color:transparent">任务失败</div>
+    <div class="sub">最终得分</div>
+    <div id="finalScore">0</div>
+    <div class="sub" id="finalWave">抵达第 1 波</div>
+    <button class="btn" id="restartBtn">再来一局</button>
+  </div>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

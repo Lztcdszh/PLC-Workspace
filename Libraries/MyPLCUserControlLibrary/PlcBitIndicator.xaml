@@ -1,0 +1,19 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcBitIndicator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             Background="Transparent" BorderThickness="0">
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Border Background="{StaticResource PlcDarkSurfaceBrush}" CornerRadius="8" Padding="8"
+            Effect="{StaticResource PlcSoftShadow}">
+        <WrapPanel x:Name="PART_Lamps"
+                   Orientation="{Binding Orientation, RelativeSource={RelativeSource AncestorType=local:PlcBitIndicator}}"/>
+    </Border>
+</local:PlcControlBase>

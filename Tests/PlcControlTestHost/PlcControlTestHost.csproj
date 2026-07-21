@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>PlcControlTestHost</AssemblyName>
+    <RootNamespace>PlcControlTestHost</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libraries\MyPLCUserControlLibrary\MyPLCUserControlLibrary.csproj" />
+    <ProjectReference Include="..\..\Libraries\MyPLCManageLibrary\MyPLCManagerLibrary.csproj" />
+  </ItemGroup>
+
+</Project>

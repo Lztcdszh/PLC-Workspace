@@ -1,0 +1,6 @@
+[1400x840] ScrollViewer Extent=733.0 Viewport=738.0 Scrollbar=NO
+[1400x840] PlcSelectButton count = 18
+Rendered main_bal_1400x840.png
+[900x600] ScrollViewer Extent=794.0 Viewport=498.0 Scrollbar=YES
+[900x600] PlcSelectButton count = 18
+Rendered main_bal_900x600.png

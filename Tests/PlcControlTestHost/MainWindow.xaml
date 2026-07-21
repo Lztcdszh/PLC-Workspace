@@ -1,0 +1,202 @@
+<Window x:Class="PlcControlTestHost.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:plc="clr-namespace:MyPLCUserControlLibrary;assembly=MyPLCUserControlLibrary"
+        Title="通用工控 HMI 控件库 · 测试与演示"
+        Height="760" Width="1180" FontFamily="{StaticResource PlcFontFamily}"
+        Background="{StaticResource PlcSurfaceAltBrush}">
+
+    <Window.Resources>
+        <Style x:Key="DemoCard" TargetType="Border" BasedOn="{StaticResource PlcCardBorder}">
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="MinWidth" Value="210"/>
+            <Setter Property="Effect" Value="{StaticResource PlcSoftShadow}"/>
+        </Style>
+        <Style x:Key="DemoTitle" TargetType="TextBlock" BasedOn="{StaticResource PlcSecondaryText}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style x:Key="ToolBtn" TargetType="Button">
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontFamily" Value="{StaticResource PlcFontFamily}"/>
+            <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
+            <Setter Property="Background" Value="{StaticResource PlcSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PlcBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- 顶部工具栏 -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource PlcSurfaceBrush}"
+                BorderBrush="{StaticResource PlcBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="🏭 工控 HMI 控件库测试台" FontSize="16" FontWeight="Bold"
+                           Foreground="{StaticResource PlcTextBrush}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <Button x:Name="btnConnect" Style="{StaticResource ToolBtn}" Click="BtnConnect_Click" Content="断开连接"/>
+                <Button x:Name="btnSim" Style="{StaticResource ToolBtn}" Click="BtnSim_Click" Content="暂停仿真"/>
+                <Button x:Name="btnUnlock" Style="{StaticResource ToolBtn}" Click="BtnUnlock_Click" Content="解除写入锁定"/>
+                <Separator Width="1" Margin="8,0" Background="{StaticResource PlcBorderBrush}"/>
+                <plc:PlcConnectionStatus x:Name="connStatus" VerticalAlignment="Center"/>
+                <TextBlock x:Name="txtTagCount" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Style="{StaticResource PlcSecondaryText}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 分类标签页 -->
+        <TabControl x:Name="Tabs" Margin="10" Background="Transparent" BorderThickness="0">
+            <TabItem Header="📊 显示核心">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcValueDisplay · 只读数值"/>
+                                <plc:PlcValueDisplay TagName="temp" TagAddress="temp" Label="温度" Unit="℃"
+                                                    DataType="Float" FormatString="F1"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcMultiStateIndicator · 状态"/>
+                                <plc:PlcMultiStateIndicator TagName="car" TagAddress="car" DataType="Int16"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcGauge · 圆弧表"/>
+                                <plc:PlcGauge TagName="press" TagAddress="press" Min="0" Max="100"
+                                             WarningValue="70" DangerValue="90" MajorTicks="5"
+                                             Label="系统压力" Unit="bar" Height="170"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcBitIndicator · 状态字"/>
+                                <plc:PlcBitIndicator TagName="bits" TagAddress="bits" BitCount="8" Orientation="Horizontal"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcLabel · 字符串"/>
+                                <plc:PlcLabel TagName="msg" TagAddress="msg" Caption="设备状态" ShowCaption="True"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcIndicator · 指示灯"/>
+                                <plc:PlcIndicator TagName="run" TagAddress="run" ToolTipText="运行指示" Width="40" Height="40"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcBarIndicator · 进度条"/>
+                                <plc:PlcBarIndicator TagName="level" TagAddress="level" Minimum="0" Maximum="100"
+                                                    Orientation="Horizontal" Height="26"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcRangeIndicator · 区间色"/>
+                                <plc:PlcRangeIndicator TagName="mode" TagAddress="mode" Condition="Greater"
+                                                      CompareValue="50" TrueBrush="LimeGreen" FalseBrush="Gray"
+                                                      ShowValue="True" Width="70" Height="70"/>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="🖱 输入交互">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcButton · 切换"/>
+                                <plc:PlcButton TagName="pump" TagAddress="pump"
+                                              ControlTagAddress="pump" StatusTagAddress="pump"
+                                              Content="启动泵" Mode="Toggle" Width="120" Height="40"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcSwitch · 拨动开关"/>
+                                <plc:PlcSwitch TagName="motor" TagAddress="motor" OnText="运行" OffText="停止"
+                                              Label="主电机" ConfirmWrite="False"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcTextBox · 文本"/>
+                                <plc:PlcTextBox TagName="note" TagAddress="note" DataType="Float" FormatString="F2" Width="160" Height="32"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcNumericInput · 数字键盘"/>
+                                <plc:PlcNumericInput TagName="setp" TagAddress="setp" DataType="Float"
+                                                     Unit="℃" Label="设定值" Min="-10" Max="120" FormatString="F1"/>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="🔔 报警与趋势">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource DemoCard}" MinWidth="340">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcAlarmViewer · 报警看板"/>
+                                <plc:PlcAlarmViewer x:Name="alarmViewer" Header="系统报警" ShowAck="True" Height="220"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}" MinWidth="420">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcTrendControl · 多曲线趋势"/>
+                                <plc:PlcTrendControl x:Name="trendCtrl" TagName="t_main" TagAddress="t_main"
+                                                     DataType="Float" Height="240" Width="400"/>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="📦 容器与主题">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource DemoCard}" MinWidth="360">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="PlcPanel · 容器（连接级联下发）"/>
+                                <plc:PlcPanel x:Name="demoPanel" Header="1# 泵站" ShowHeader="True" Height="200">
+                                    <plc:PlcPanel.PanelContent>
+                                        <StackPanel Margin="6">
+                                            <plc:PlcValueDisplay TagName="p_temp" TagAddress="p_temp" Label="温度" Unit="℃" DataType="Float"/>
+                                            <plc:PlcSwitch TagName="p_motor" TagAddress="p_motor" OnText="运行" OffText="停止" Label="电机"/>
+                                            <plc:PlcIndicator TagName="p_run" TagAddress="p_run" ToolTipText="运行" Width="28" Height="28"/>
+                                        </StackPanel>
+                                    </plc:PlcPanel.PanelContent>
+                                </plc:PlcPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DemoCard}" MinWidth="300">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource DemoTitle}" Text="说明"/>
+                                <TextBlock TextWrapping="Wrap" Style="{StaticResource PlcSecondaryText}" LineHeight="20">
+                                    • 顶部工具栏可连接/断开仿真 PLC、暂停或继续数据仿真。&#10;
+                                    • 「解除写入锁定」可让被手动写入的标签重新参与随机仿真。&#10;
+                                    • 写入类控件（按钮/开关/数字键盘）写入后会锁定该标签，便于观察。&#10;
+                                    • 全部控件共享 Themes/PlcStyles.xaml 主题，配色与圆角统一。
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

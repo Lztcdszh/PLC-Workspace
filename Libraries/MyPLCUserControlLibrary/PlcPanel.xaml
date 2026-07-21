@@ -1,0 +1,43 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             Background="Transparent" BorderThickness="0">
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏（左侧强调条） -->
+            <Border x:Name="PART_HeaderBorder"
+                    Grid.Row="0"
+                    Background="{Binding HeaderBrush, RelativeSource={RelativeSource AncestorType=local:PlcPanel}}"
+                    Visibility="{Binding ShowHeader, RelativeSource={RelativeSource AncestorType=local:PlcPanel}, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal" Margin="3,2">
+                    <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5"
+                               Fill="{StaticResource PlcAccentBrush}" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="PART_HeaderText"
+                               Text="{Binding Header, RelativeSource={RelativeSource AncestorType=local:PlcPanel}}"
+                               Style="{StaticResource PlcHeaderText}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 内容区 -->
+            <ContentPresenter x:Name="PART_Content"
+                              Grid.Row="1"
+                              Content="{Binding PanelContent, RelativeSource={RelativeSource AncestorType=local:PlcPanel}}"
+                              Margin="1"/>
+        </Grid>
+    </Border>
+</local:PlcControlBase>

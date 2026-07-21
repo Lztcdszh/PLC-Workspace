@@ -1,0 +1,53 @@
+# ============ Build output ============
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Build output variants (irregular dir names used during dev)
+bin*/
+[Bb]in*/
+Release*/
+Debug*/
+[Dd]ebug/
+[Rr]elease/
+*.Debug/
+out/
+dist/
+
+# Self-contained publish folders
+*SelfContained*/
+PLCTesting-SelfContained-win-x64/
+
+# Installer / package artifacts
+*.msi
+*.msm
+*.msix
+*.appx
+*.zip
+setup.exe
+publish/
+Publish/
+
+# Verification screenshots (not source)
+**/screenshots/*.png
+
+# ============ IDE / Editor ============
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ============ WorkBuddy local memory & project data (do not publish) ============
+.workbuddy/
+
+# ============ Standalone nested repos (have their own .git) ============
+Apps/PointCloudVolume/
+Archive/
+
+# ============ OS ============
+Thumbs.db
+Desktop.ini
+.DS_Store

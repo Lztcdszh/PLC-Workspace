@@ -1,0 +1,33 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcLabel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             Background="Transparent" BorderThickness="0">
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}" Padding="10,8">
+        <StackPanel Orientation="Vertical" Margin="2" VerticalAlignment="Center">
+            <TextBlock x:Name="PART_Caption"
+                       Text="{Binding Caption, RelativeSource={RelativeSource AncestorType=local:PlcLabel}}"
+                       FontFamily="{StaticResource PlcFontFamily}"
+                       FontSize="{Binding CaptionFontSize, RelativeSource={RelativeSource AncestorType=local:PlcLabel}}"
+                       Foreground="{StaticResource PlcAccentBrush}"
+                       Margin="0,0,0,3"
+                       Visibility="{Binding ShowCaption, RelativeSource={RelativeSource AncestorType=local:PlcLabel}, Converter={StaticResource BoolToVis}}"/>
+            <TextBlock x:Name="PART_Text"
+                       Text="—"
+                       FontFamily="{StaticResource PlcFontFamily}"
+                       FontSize="{Binding TextFontSize, RelativeSource={RelativeSource AncestorType=local:PlcLabel}}"
+                       FontWeight="SemiBold"
+                       Foreground="{Binding ValueForeground, RelativeSource={RelativeSource AncestorType=local:PlcLabel}}"
+                       TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+    </Border>
+</local:PlcControlBase>

@@ -1,0 +1,115 @@
+﻿<Window x:Class="PLCTesting.Views.ParameterSettingsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:myplc="clr-namespace:MyPLCUserControlLibrary;assembly=MyPLCUserControlLibrary"
+        Title="参数设置"
+        Width="560"
+        Height="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        FontFamily="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif"
+        Background="#E8ECF0">
+
+    <Window.Resources>
+        <!-- 读写数值输入：撑满卡片宽度 -->
+        <Style TargetType="myplc:PlcNumericInput">
+            <Setter Property="ShowCaption" Value="True" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+
+        <!-- 还原参数按钮 -->
+        <Style x:Key="AccentButton" TargetType="Button">
+            <Setter Property="Background" Value="#E6A23C" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!-- 分组小标题 -->
+        <Style x:Key="GroupTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#409EFF" />
+            <Setter Property="Margin" Value="0,10,0,4" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 标题栏 -->
+        <Border Grid.Row="0" Background="#1A2A3A" CornerRadius="8" Padding="16,12" Margin="0,0,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="⚙️" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock Text="运动参数设置" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="🔁 还原参数" Style="{StaticResource AccentButton}"
+                        Command="{Binding ResetParametersCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- 参数卡片（连接级联：仅需在外层 PlcPanel 设置一次） -->
+        <myplc:PlcPanel Grid.Row="1" Header="📝 参数设定" Connection="{Binding Connection}" VerticalAlignment="Stretch">
+            <myplc:PlcPanel.PanelContent>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="4">
+                        <!-- 分组一：运动参数 -->
+                        <TextBlock Text="🚀 运动参数" Style="{StaticResource GroupTitle}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <myplc:PlcNumericInput Grid.Row="0" Grid.Column="0" Margin="0,0,3,2" Label="加速度设置" TagName="加速时间" TagAddress="DB1.DBD220"
+                                                   DataType="Int32" FormatString="F0" Unit="ms" />
+                            <myplc:PlcNumericInput Grid.Row="0" Grid.Column="1" Margin="3,0,0,2" Label="减速度设置" TagName="减速时间" TagAddress="DB1.DBD224"
+                                                   DataType="Int32" FormatString="F0" Unit="ms" />
+                            <myplc:PlcNumericInput Grid.Row="1" Grid.Column="0" Margin="0,0,3,0" Label="最大速度设置" TagName="最大速度" TagAddress="DB1.DBD182"
+                                                   DataType="Float" FormatString="F2" Unit="度/秒" />
+                            <myplc:PlcNumericInput Grid.Row="1" Grid.Column="1" Margin="3,0,0,0" Label="低速速度设置" TagName="低速速度" TagAddress="DB1.DBD186"
+                                                   DataType="Float" FormatString="F2" Unit="度/秒" />
+                        </Grid>
+
+                        <!-- 分组二：位置限位 -->
+                        <TextBlock Text="📍 位置限位" Style="{StaticResource GroupTitle}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                       
+                            <myplc:PlcNumericInput Grid.Row="0" Grid.Column="0" Margin="3,0,0,2" Label="负极限位置" TagName="负极限位置" TagAddress="DB1.DBW270"
+                                                   DataType="Int16" FormatString="F0" />
+                            <myplc:PlcNumericInput Grid.Row="0" Grid.Column="1" Margin="0,0,3,0" Label="充电位置" TagName="充电位置" TagAddress="DB1.DBW190"
+                                                   DataType="Int16" FormatString="F0" />
+                            <myplc:PlcNumericInput Grid.Row="1" Grid.Column="0" Margin="3,0,0,0" Label="正极限位置" TagName="正极限位置" TagAddress="DB1.DBW180"
+                                                   DataType="Int16" FormatString="F0" />
+                            <myplc:PlcNumericInput Grid.Row="1" Grid.Column="1" Label="故障时间设定" TagName="故障时间设定" TagAddress="DB1.DBW173"
+                           DataType="Int16" FormatString="F0" Unit="100ms" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </myplc:PlcPanel.PanelContent>
+        </myplc:PlcPanel>
+    </Grid>
+</Window>

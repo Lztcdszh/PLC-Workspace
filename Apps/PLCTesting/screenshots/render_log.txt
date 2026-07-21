@@ -1,0 +1,22 @@
+[1400x760] ScrollViewer Extent=(1308.0,701.0) Viewport=(1359.0,658.0)
+[1400x760] VerticalScrollBarVisible=True  HorizontalScrollBarVisible=False
+[1400x760] Natural content height (infinite)=646.0  -> no-scrollbar if <= 658.0  (overflow=-12.0)
+[1400x760] outer Grid rows=2, ActualHeight=658.0
+   row[0] Rectangle ActualHeight=0.0
+   row[1] ScrollContentPresenter ActualHeight=658.0
+   row[2] ScrollBar ActualHeight=658.0
+   row[3] ScrollBar ActualHeight=0.0
+[1400x760] Position ItemsControl ActualHeight=110.0
+[1400x760] PlcSelectButton count=18 (expect 17)
+Rendered main_sel_1400x760.png
+[900x600] ScrollViewer Extent=(843.0,701.0) Viewport=(859.0,498.0)
+[900x600] VerticalScrollBarVisible=True  HorizontalScrollBarVisible=False
+[900x600] Natural content height (infinite)=646.0  -> no-scrollbar if <= 498.0  (overflow=148.0)
+[900x600] outer Grid rows=2, ActualHeight=498.0
+   row[0] Rectangle ActualHeight=0.0
+   row[1] ScrollContentPresenter ActualHeight=498.0
+   row[2] ScrollBar ActualHeight=498.0
+   row[3] ScrollBar ActualHeight=0.0
+[900x600] Position ItemsControl ActualHeight=110.0
+[900x600] PlcSelectButton count=18 (expect 17)
+Rendered main_sel_900x600.png

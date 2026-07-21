@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PlcHeadlessDemo</RootNamespace>
+    <AssemblyName>PlcHeadlessDemo</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PlcControlTestHost\PlcControlTestHost.csproj" />
+    <ProjectReference Include="..\..\Libraries\MyPLCManageLibrary\MyPLCManagerLibrary.csproj" />
+  </ItemGroup>
+
+</Project>

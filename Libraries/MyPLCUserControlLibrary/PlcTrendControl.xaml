@@ -1,0 +1,155 @@
+<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcTrendControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MyPLCUserControlLibrary"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             ToolTip="{Binding ToolTipText, RelativeSource={RelativeSource Self}}">
+
+    <local:PlcControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        </ResourceDictionary>
+    </local:PlcControlBase.Resources>
+
+    <Border CornerRadius="{StaticResource PlcCardRadius}"
+            Background="{Binding Background, RelativeSource={RelativeSource Self}}"
+            BorderBrush="{StaticResource PlcBorderBrush}"
+            BorderThickness="1"
+            Effect="{StaticResource PlcShadow}"
+            SnapsToDevicePixels="True"
+            UseLayoutRounding="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ===== 标题栏（标题 + 当前值大字 + 单位 + 图例） ===== -->
+            <Border x:Name="PART_Header" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                    CornerRadius="10,10,0,0" Padding="8,5,8,5">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FFFFFF" Offset="0"/>
+                        <GradientStop Color="#F5F7FA" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左：标题 + 图例 -->
+                    <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="PART_TitleAccent" Width="4" Height="15" CornerRadius="2"
+                                    Background="{Binding StrokeBrush, RelativeSource={RelativeSource AncestorType=local:PlcTrendControl}}"
+                                    Margin="0,0,7,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="PART_TitleText" Text="趋势曲线"
+                                   FontFamily="{StaticResource PlcFontFamily}"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PlcTextBrush}"
+                                   VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <!-- 多曲线图例 -->
+                        <StackPanel x:Name="PART_Legend" Orientation="Horizontal"
+                                    Margin="0,5,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+
+                    <!-- 右：当前值大字 + 单位 -->
+                    <StackPanel x:Name="PART_ValuePanel" Grid.Column="1" Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <TextBlock x:Name="PART_LastValueText" Text="--"
+                                   FontFamily="{StaticResource PlcFontFamily}"
+                                   FontSize="18" FontWeight="Bold"
+                                   Foreground="{Binding StrokeBrush, RelativeSource={RelativeSource AncestorType=local:PlcTrendControl}}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="PART_UnitText" Text=""
+                                   FontFamily="{StaticResource PlcFontFamily}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource PlcTextSecondaryBrush}"
+                                   VerticalAlignment="Bottom" Margin="3,0,0,3"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== Y轴标签区域（左侧） ===== -->
+            <Border Grid.Row="1" Grid.Column="0"
+                    Background="{StaticResource PlcSurfaceAltBrush}"
+                    BorderBrush="{StaticResource PlcBorderBrush}"
+                    BorderThickness="0,1,1,0">
+                <Canvas x:Name="PART_YAxisCanvas" Width="40" Background="Transparent" Margin="0,0,2,0"/>
+            </Border>
+
+            <!-- ===== 绘图区域 ===== -->
+            <Grid x:Name="PART_PlotArea" Grid.Row="1" Grid.Column="1"
+                  ClipToBounds="True"
+                  Background="{StaticResource PlcSurfaceBrush}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#FFFFFF" Offset="0"/>
+                                    <GradientStop Color="#FBFCFE" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Grid.Style>
+                <Canvas x:Name="PART_GridCanvas" Background="Transparent"/>
+                <Canvas x:Name="PART_AreaCanvas" Background="Transparent"/>
+                <Canvas x:Name="PART_CurveCanvas" Background="Transparent"/>
+                <Canvas x:Name="PART_MarkerCanvas" Background="Transparent"/>
+                <Canvas x:Name="PART_MouseCanvas" Background="Transparent" Visibility="Collapsed"/>
+                <TextBlock x:Name="PART_NoDataText"
+                           Text="暂无数据"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontFamily="{StaticResource PlcFontFamily}"
+                           FontSize="13"
+                           Foreground="{StaticResource PlcTextSecondaryBrush}"
+                           Visibility="Collapsed"/>
+            </Grid>
+
+            <!-- ===== X轴标签区域（底部） ===== -->
+            <Border Grid.Row="2" Grid.Column="0"
+                    Background="{StaticResource PlcSurfaceAltBrush}"
+                    BorderBrush="{StaticResource PlcBorderBrush}"
+                    BorderThickness="0,1,1,0"/>
+            <Border Grid.Row="2" Grid.Column="1"
+                    Background="{StaticResource PlcSurfaceAltBrush}"
+                    BorderBrush="{StaticResource PlcBorderBrush}"
+                    BorderThickness="0,1,0,0">
+                <Canvas x:Name="PART_XAxisCanvas" Height="16" Background="Transparent" Margin="0,1,0,0"/>
+            </Border>
+
+            <!-- ===== 底部统计栏（最大/最小/平均） ===== -->
+            <Border x:Name="PART_Footer" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                    Background="{StaticResource PlcSurfaceAltBrush}"
+                    BorderBrush="{StaticResource PlcBorderBrush}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,10,10" Height="20">
+                <StackPanel Orientation="Horizontal" Margin="12,0" VerticalAlignment="Center">
+                    <TextBlock Text="最大" FontFamily="{StaticResource PlcFontFamily}" FontSize="9" Foreground="{StaticResource PlcTextSecondaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PART_MaxText" Text="--" FontFamily="{StaticResource PlcFontFamily}" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource PlcDangerBrush}" Margin="2,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="最小" FontFamily="{StaticResource PlcFontFamily}" FontSize="9" Foreground="{StaticResource PlcTextSecondaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PART_MinText" Text="--" FontFamily="{StaticResource PlcFontFamily}" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource PlcSuccessBrush}" Margin="2,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="平均" FontFamily="{StaticResource PlcFontFamily}" FontSize="9" Foreground="{StaticResource PlcTextSecondaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PART_AvgText" Text="--" FontFamily="{StaticResource PlcFontFamily}" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource PlcAccentBrush}" Margin="2,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</local:PlcControlBase>
