@@ -167,6 +167,8 @@
                                 Background="#2B7FE0" Command="{Binding OpenLogQueryCommand}" Margin="0,0,8,0" />
                         <Button Content="📡 MQTT配置" Style="{StaticResource TechToolButton}"
                                 Background="#3BA55C" Command="{Binding OpenMqttConfigCommand}" Margin="0,0,8,0" />
+                        <Button Content="🗂️ 数据点" Style="{StaticResource TechToolButton}"
+                                Background="#8E7CC3" Command="{Binding OpenDataPointEditorCommand}" Margin="0,0,8,0" />
                         <!-- 用户管理：仅管理员可见 -->
                         <Button Content="👤 用户管理"
                                 Background="#9B59B6" Command="{Binding OpenUserManagementCommand}" Margin="0,0,8,0">
@@ -497,13 +499,13 @@
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <myplc:PlcTrendControl Grid.Row="0" Connection="{Binding Connection}" Width="300" Height="160"
+                            <myplc:PlcTrendControl Grid.Row="0" Connection="{Binding Connection}" Height="160"
                                                      TagAddress="DB1.DBD1012" DataType="Float"
                                                      SamplingInterval="200" MaxDataPoints="100"
                                                      StrokeBrush="#409EFF" StrokeThickness="2"
                                                      Title="实际速度趋势" Unit="度/秒"
                                                      SmoothCurve="True" ShowArea="True"
-                                                     ShowStats="True" Margin="138,4,614,7" Grid.RowSpan="2"  />
+                                                     ShowStats="True" Margin="138,4,395,7" Grid.RowSpan="2"  />
                             <TextBlock Grid.Row="1" Text="采样 200ms，自动 Y 轴，100 点" FontSize="8" Foreground="#909399"
                                            HorizontalAlignment="Center" Margin="0,2,0,0" />
                         </Grid>

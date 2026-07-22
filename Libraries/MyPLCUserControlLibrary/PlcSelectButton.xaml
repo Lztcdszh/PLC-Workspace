@@ -23,31 +23,38 @@
 
     <UserControl.Template>
         <ControlTemplate TargetType="local:PlcSelectButton">
-            <Border x:Name="PART_Border"
-                    Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="{TemplateBinding CornerRadius}"
-                    SnapsToDevicePixels="True">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.12" Color="#20242B"/>
-                </Border.Effect>
-                <Grid>
-                    <ContentPresenter x:Name="PART_Content"
-                                      Content="{TemplateBinding ButtonText}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      TextElement.FontSize="{TemplateBinding FontSize}"
-                                      TextElement.FontWeight="Bold"
-                                      TextElement.Foreground="#303133"/>
-                    <!-- 按下遮罩层 -->
-                    <Border x:Name="Overlay"
-                            Background="#30000000"
-                            Opacity="0"
-                            IsHitTestVisible="False"
-                            CornerRadius="{TemplateBinding CornerRadius}"/>
-                </Grid>
-            </Border>
+            <!-- 清晰阴影：用半透明背板模拟，刻意不使用 DropShadowEffect，
+                 因为 Effect 会把整棵视觉树渲染进 96DPI 离屏位图再拉伸，高分屏下文字/边框发糊。 -->
+            <Grid>
+                <Border x:Name="PART_Shadow"
+                        Background="#20242B"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Margin="0,1,0,0"
+                        Opacity="0.12"
+                        SnapsToDevicePixels="True"/>
+                <Border x:Name="PART_Border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        SnapsToDevicePixels="True">
+                    <Grid>
+                        <ContentPresenter x:Name="PART_Content"
+                                          Content="{TemplateBinding ButtonText}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"
+                                          TextElement.FontWeight="Bold"
+                                          TextElement.Foreground="#303133"/>
+                        <!-- 按下遮罩层 -->
+                        <Border x:Name="Overlay"
+                                Background="#30000000"
+                                Opacity="0"
+                                IsHitTestVisible="False"
+                                CornerRadius="{TemplateBinding CornerRadius}"/>
+                    </Grid>
+                </Border>
+            </Grid>
 
             <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">

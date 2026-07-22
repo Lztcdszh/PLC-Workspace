@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -46,6 +47,11 @@ namespace MyPLCUserControlLibrary
             // 必须在解析 XAML 集合属性元素（<PlcTrendControl.Series>…）之前确保集合非 null，
             // 否则 XAML 解析器往集合加子项时会抛 “集合属性 Series 为 null”。
             Series ??= new ObservableCollection<PlcTrendSeries>();
+
+            // 右键上下文菜单的数据上下文指向本控件，使菜单项的勾选项能双向绑定到依赖属性
+            if (TrendContextMenu != null)
+                TrendContextMenu.DataContext = this;
+            ContextMenuOpening += TrendContextMenu_OnOpening;
 
             Width = 420;
             Height = 260;
@@ -338,6 +344,52 @@ namespace MyPLCUserControlLibrary
             set => SetValue(SeriesProperty, value);
         }
 
+        /// <summary>是否允许右键上下文菜单（属性设置）。默认 true；设为 false 可在运行期禁止操作员修改曲线属性。</summary>
+        public static readonly DependencyProperty AllowPropertyMenuProperty =
+            DependencyProperty.Register(nameof(AllowPropertyMenu), typeof(bool), typeof(PlcTrendControl),
+                new PropertyMetadata(true));
+
+        public bool AllowPropertyMenu
+        {
+            get => (bool)GetValue(AllowPropertyMenuProperty);
+            set => SetValue(AllowPropertyMenuProperty, value);
+        }
+
+        // ===== 报警：超过报警值时曲线变色 =====
+
+        /// <summary>是否启用报警。启用后超过 <see cref="AlarmValue"/> 的曲线段以 <see cref="AlarmBrush"/> 显示，并绘制报警参考线。</summary>
+        public static readonly DependencyProperty AlarmEnabledProperty =
+            DependencyProperty.Register(nameof(AlarmEnabled), typeof(bool), typeof(PlcTrendControl),
+                new PropertyMetadata(false, (d, e) => ((PlcTrendControl)d).OnAlarmChanged()));
+
+        public bool AlarmEnabled
+        {
+            get => (bool)GetValue(AlarmEnabledProperty);
+            set => SetValue(AlarmEnabledProperty, value);
+        }
+
+        /// <summary>报警阈值。数值超过此值即触发变色。</summary>
+        public static readonly DependencyProperty AlarmValueProperty =
+            DependencyProperty.Register(nameof(AlarmValue), typeof(double), typeof(PlcTrendControl),
+                new PropertyMetadata(80d, (d, e) => ((PlcTrendControl)d).OnAlarmChanged()));
+
+        public double AlarmValue
+        {
+            get => (double)GetValue(AlarmValueProperty);
+            set => SetValue(AlarmValueProperty, value);
+        }
+
+        /// <summary>报警色（超限段曲线、参考线、超限当前值文字）。默认红色 #F56C6C。</summary>
+        public static readonly DependencyProperty AlarmBrushProperty =
+            DependencyProperty.Register(nameof(AlarmBrush), typeof(Brush), typeof(PlcTrendControl),
+                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(245, 108, 108)), (d, e) => ((PlcTrendControl)d).OnAlarmChanged()));
+
+        public Brush AlarmBrush
+        {
+            get => (Brush)GetValue(AlarmBrushProperty);
+            set => SetValue(AlarmBrushProperty, value);
+        }
+
         #endregion
 
         #region 属性变更回调
@@ -362,6 +414,22 @@ namespace MyPLCUserControlLibrary
         {
             if (PART_Footer != null)
                 PART_Footer.Visibility = ShowStats ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void OnAlarmChanged()
+        {
+            RedrawCurveAndArea();
+            RefreshLastValueColor();
+        }
+
+        /// <summary>按报警状态刷新“当前值”大字颜色：超限红色，否则曲线色。</summary>
+        private void RefreshLastValueColor()
+        {
+            if (PART_LastValueText == null) return;
+            if (_dataQueue.Count > 0 && AlarmEnabled && _dataQueue.Last() >= AlarmValue)
+                PART_LastValueText.Foreground = AlarmBrush;
+            else
+                PART_LastValueText.Foreground = StrokeBrush;
         }
 
         #endregion
@@ -648,6 +716,7 @@ namespace MyPLCUserControlLibrary
 
             if (PART_LastValueText != null)
                 PART_LastValueText.Text = FormatValue(value);
+            RefreshLastValueColor();
             if (AutoScaleY)
                 AutoScaleYRange();
 
@@ -889,12 +958,16 @@ namespace MyPLCUserControlLibrary
                            fillArea: false, showPoints: false, highlightLast: HighlightLast);
             }
 
-            // 再画主序列（在最上层）
+            // 再画主序列（在最上层），主序列参与报警变色
             if (_dataQueue.Count >= 2)
             {
                 DrawSeries(_dataQueue.ToArray(), StrokeBrush, StrokeThickness,
-                           fillArea: ShowArea, showPoints: ShowDataPoints, highlightLast: HighlightLast);
+                           fillArea: ShowArea, showPoints: ShowDataPoints, highlightLast: HighlightLast,
+                           applyAlarm: true);
             }
+
+            // 报警阈值参考线（画在曲线之上，最清晰）
+            DrawAlarmLine();
 
             if (PART_NoDataText != null)
             {
@@ -903,8 +976,8 @@ namespace MyPLCUserControlLibrary
             }
         }
 
-        /// <summary>绘制单条序列：面积渐变、平滑/折线、数据点、最新点光晕。</summary>
-        private void DrawSeries(double[] data, Brush stroke, double thickness, bool fillArea, bool showPoints, bool highlightLast)
+        /// <summary>绘制单条序列：面积渐变、平滑/折线、数据点、最新点光晕。applyAlarm=true 时超过报警值的曲线段用报警色叠加显示。</summary>
+        private void DrawSeries(double[] data, Brush stroke, double thickness, bool fillArea, bool showPoints, bool highlightLast, bool applyAlarm = false)
         {
             if (data.Length < 2) return;
 
@@ -953,6 +1026,29 @@ namespace MyPLCUserControlLibrary
                 StrokeStartLineCap = PenLineCap.Round,
                 StrokeEndLineCap = PenLineCap.Round
             });
+
+            // ===== 报警变色：超过报警值的曲线段用报警色叠加（裁剪到阈值线以上区域） =====
+            if (applyAlarm && AlarmEnabled)
+            {
+                double alarmY = MapY(AlarmValue);
+                // 裁剪矩形覆盖“报警值以上”的区域（Y 越小值越大），clamp 到绘图区
+                double clipBottom = Math.Max(0, Math.Min(_plotHeight, alarmY));
+                if (clipBottom > 0)
+                {
+                    var clip = new RectangleGeometry(new Rect(0, 0, _plotWidth, clipBottom));
+                    clip.Freeze();
+                    PART_CurveCanvas.Children.Add(new Path
+                    {
+                        Data = lineGeo,
+                        Stroke = AlarmBrush,
+                        StrokeThickness = thickness,
+                        StrokeLineJoin = PenLineJoin.Round,
+                        StrokeStartLineCap = PenLineCap.Round,
+                        StrokeEndLineCap = PenLineCap.Round,
+                        Clip = clip
+                    });
+                }
+            }
 
             // ===== 数据点标记 =====
             if (showPoints)
@@ -1041,6 +1137,38 @@ namespace MyPLCUserControlLibrary
         private static Color ColorOf(Brush? brush, Color fallback)
         {
             return brush is SolidColorBrush scb ? scb.Color : fallback;
+        }
+
+        /// <summary>绘制报警阈值水平参考线（红色虚线 + 数值标签）。</summary>
+        private void DrawAlarmLine()
+        {
+            if (!AlarmEnabled || PART_CurveCanvas == null || _plotWidth <= 0 || _plotHeight <= 0) return;
+            double alarmY = MapY(AlarmValue);
+            if (alarmY < 0 || alarmY > _plotHeight) return;   // 报警线不在当前 Y 量程内则不画
+
+            PART_CurveCanvas.Children.Add(new Line
+            {
+                X1 = 0,
+                Y1 = alarmY,
+                X2 = _plotWidth,
+                Y2 = alarmY,
+                Stroke = AlarmBrush,
+                StrokeThickness = 1.2,
+                StrokeDashArray = new DoubleCollection { 5, 3 }
+            });
+
+            var tb = new TextBlock
+            {
+                Text = "报警 " + FormatValue(AlarmValue),
+                FontSize = 9,
+                Foreground = AlarmBrush,
+                Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+                Padding = new Thickness(3, 0, 3, 0)
+            };
+            tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Canvas.SetLeft(tb, _plotWidth - tb.DesiredSize.Width - 2);
+            Canvas.SetTop(tb, Math.Max(0, alarmY - tb.DesiredSize.Height - 1));
+            PART_CurveCanvas.Children.Add(tb);
         }
 
         private double MapY(double value)
@@ -1159,13 +1287,6 @@ namespace MyPLCUserControlLibrary
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(5),
                 Padding = new Thickness(8, 4, 8, 4),
-                Effect = new System.Windows.Media.Effects.DropShadowEffect
-                {
-                    BlurRadius = 6,
-                    ShadowDepth = 1,
-                    Opacity = 0.2,
-                    Color = Colors.Black
-                },
                 Child = tipPanel
             };
 
@@ -1218,6 +1339,36 @@ namespace MyPLCUserControlLibrary
         protected override void OnUnloadedInternal()
         {
             StopSampling();
+        }
+
+        #endregion
+
+        #region 右键上下文菜单（属性设置）
+
+        private void TrendContextMenu_OnOpening(object? sender, ContextMenuEventArgs e)
+        {
+            if (!AllowPropertyMenu)
+                e.Handled = true;
+        }
+
+        private void OpenSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new PlcTrendSettingsDialog(this);
+                var owner = Window.GetWindow(this);
+                if (owner != null) dlg.Owner = owner;
+                dlg.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[PlcTrendControl] 打开属性设置对话框失败: {ex.Message}");
+            }
+        }
+
+        private void ClearData_Click(object? sender, RoutedEventArgs e)
+        {
+            ClearData();
         }
 
         #endregion

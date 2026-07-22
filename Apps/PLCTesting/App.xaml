@@ -4,6 +4,10 @@
              xmlns:local="clr-namespace:PLCTesting"
              xmlns:prism="http://prismlibrary.com/" >
     <Application.Resources>
-         
+        <!-- 全应用锐化文字渲染：默认 Ideal 模式在高分屏下偏软，Display 模式贴像素更清晰 -->
+        <Style TargetType="FrameworkElement">
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+            <Setter Property="TextOptions.TextRenderingMode" Value="Auto" />
+        </Style>
     </Application.Resources>
 </prism:PrismApplication>

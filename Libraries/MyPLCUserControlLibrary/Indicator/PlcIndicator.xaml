@@ -13,15 +13,23 @@
     </local:PlcControlBase.Resources>
 
     <Grid>
+        <!-- 清晰辉光：用径向渐变模拟，刻意不依赖 DropShadowEffect（避免高分屏离屏位图拉伸发糊） -->
+        <Ellipse x:Name="PART_Glow"
+                 Width="{Binding Width, RelativeSource={RelativeSource AncestorType=local:PlcControlBase}}"
+                 Height="{Binding Height, RelativeSource={RelativeSource AncestorType=local:PlcControlBase}}"
+                 Margin="-7" Opacity="0.45" IsHitTestVisible="False">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#000000" Offset="0.5"/>
+                    <GradientStop Color="Transparent" Offset="1"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
         <Ellipse x:Name="PART_Ellipse"
                  Width="{Binding Width, RelativeSource={RelativeSource AncestorType=local:PlcControlBase}}"
                  Height="{Binding Height, RelativeSource={RelativeSource AncestorType=local:PlcControlBase}}"
                  Stroke="{StaticResource PlcBorderBrush}"
                  StrokeThickness="1.5"
-                 Fill="Gray">
-            <Ellipse.Effect>
-                <DropShadowEffect BlurRadius="7" ShadowDepth="0" Opacity="0.45" Color="#000000"/>
-            </Ellipse.Effect>
-        </Ellipse>
+                 Fill="Gray"/>
     </Grid>
 </local:PlcControlBase>

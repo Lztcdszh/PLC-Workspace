@@ -18,17 +18,12 @@
             Background="{Binding BackgroundBrush, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}"
             BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}"
             BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}"
-            CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}"
-            Effect="{StaticResource PlcSoftShadow}">
+            CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}">
         <Grid>
             <!-- 填充矩形 -->
             <Border x:Name="PART_FillBorder"
                     Background="{Binding CurrentFillBrush, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}"
-                    CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="4" ShadowDepth="0" Opacity="0.30" Color="#000000"/>
-                </Border.Effect>
-            </Border>
+                    CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=local:PlcBarIndicator}}"/>
 
             <!-- 数值文本 -->
             <TextBlock x:Name="PART_ValueText"

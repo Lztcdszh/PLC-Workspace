@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
@@ -26,7 +25,7 @@ namespace PLCTesting.Services
     /// MQTT 发布服务：订阅 PLC 连接管理器的标签变化事件，将选中标签的值转发到 MQTT Broker。
     /// 完全位于 app 层，不污染控件库；支持断线自动重连、变更/周期两种发布模式、JSON 负载。
     /// </summary>
-    public class MqttPublisherService : INotifyPropertyChanged, IDisposable
+    public class MqttPublisherService : INotifyPropertyChanged, IMessagePublisher, IDisposable
     {
         private static readonly string ConfigPath =
             Path.Combine(AppContext.BaseDirectory, "mqttconfig.json");
@@ -38,6 +37,7 @@ namespace PLCTesting.Services
         };
 
         private readonly IConnectionManager _connection;
+        private readonly IDataPointSource _registry;
         private readonly MqttFactory _factory = new();
         private IMqttClient _client;
 
@@ -49,7 +49,6 @@ namespace PLCTesting.Services
         private string _statusText = "未启动";
         private string _lastError = "";
         private int _publishedCount;
-        private System.Timers.Timer _publishTimer;
 
         public MqttConfig Config { get; set; } = new();
 
@@ -83,17 +82,14 @@ namespace PLCTesting.Services
             private set { if (_publishedCount != value) { _publishedCount = value; Raise(nameof(PublishedCount)); } }
         }
 
-        public MqttPublisherService(IConnectionManager connection)
+        public MqttPublisherService(IConnectionManager connection, IDataPointSource registry)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _client = _factory.CreateMqttClient();
 
             _client.ConnectedAsync += OnMqttConnected;
             _client.DisconnectedAsync += OnMqttDisconnected;
-
-            _publishTimer = new System.Timers.Timer();
-            _publishTimer.AutoReset = true;
-            _publishTimer.Elapsed += async (s, e) => await PublishAllSelectedAsync();
 
             LoadConfig();
         }
@@ -146,7 +142,6 @@ namespace PLCTesting.Services
             {
                 _connection.TagValueChanged += OnTagValueChanged;
                 await ConnectWithRetryAsync();
-                ConfigureTimer();
             }
         }
 
@@ -155,7 +150,6 @@ namespace PLCTesting.Services
         {
             _stopRequested = true;
             _isRunning = false;
-            _publishTimer.Stop();
             _connection.TagValueChanged -= OnTagValueChanged;
             try
             {
@@ -182,19 +176,6 @@ namespace PLCTesting.Services
                 StatusText = "已就绪（未启用）";
         }
 
-        private void ConfigureTimer()
-        {
-            if (Config.PublishMode == MqttPublishMode.Periodic && Config.PublishIntervalMs > 0)
-            {
-                _publishTimer.Interval = Config.PublishIntervalMs;
-                _publishTimer.Start();
-            }
-            else
-            {
-                _publishTimer.Stop();
-            }
-        }
-
         #endregion
 
         #region 连接
@@ -203,15 +184,7 @@ namespace PLCTesting.Services
         {
             var builder = new MqttClientOptionsBuilder()
                 .WithTcpServer(config.BrokerHost, config.BrokerPort)
-                .WithClientId(string.IsNullOrWhiteSpace(config.ClientId)
-                    ? $"PLCTesting_{Environment.MachineName}"
-                    : config.ClientId);
-
-            if (!string.IsNullOrEmpty(config.Username))
-                builder = builder.WithCredentials(config.Username, config.Password);
-
-            if (config.UseTls)
-                builder = builder.WithTls();
+                .WithClientId($"PLCTesting_{Environment.MachineName}_{Guid.NewGuid():N}");
 
             return builder.Build();
         }
@@ -290,28 +263,18 @@ namespace PLCTesting.Services
         /// 这样无论配置里存的是标签名（如 "实际速度"）还是地址（如 "DB1.DBD1012"）都能正确命中，
         /// 避免因「选中键」与「匹配键」不一致导致整批不发布。
         /// </summary>
-        private bool IsTagSelected(PLCTag tag)
-        {
-            if (Config.PublishAllTags) return true;
-            return Config.SelectedTags.Any(x =>
-                string.Equals(x, tag.Name, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(x, tag.Address, StringComparison.OrdinalIgnoreCase));
-        }
+        private bool IsTagSelected(PLCTag tag) => _registry.ShouldPublish(tag.Name);
 
         private string BuildTopic(PLCTag tag)
         {
-            var key = Config.TopicFormat == MqttTopicFormat.ByName
-                ? (string.IsNullOrWhiteSpace(tag.Name) ? tag.Address : tag.Name)
-                : tag.Address;
-            return $"{Config.BaseTopic.Trim('/')}/{key}";
+            return $"{Config.BaseTopic.Trim('/')}/{tag.Address}";
         }
 
         private void OnTagValueChanged(object sender, TagService.TagChangedEventArgs e)
         {
             if (!_isRunning || !Config.Enabled || !IsConnected) return;
-            if (Config.PublishMode != MqttPublishMode.OnChange) return;
-            var tag = _connection.GetTag(e.TagName);
-            if (tag != null && !IsTagSelected(tag)) return;
+            // 只发布 dataPoints.json 中标记为 PublishMqtt 的数据点
+            if (!_registry.ShouldPublish(e.TagName)) return;
             _ = PublishTagAsync(e.TagName, e.NewValue);
         }
 
@@ -320,20 +283,24 @@ namespace PLCTesting.Services
             if (!_client.IsConnected) return;
             try
             {
+                _registry.TryGet(tagName, out var cfg);
                 var tag = _connection.GetTag(tagName);
-                var address = tag?.Address ?? tagName;
+                var address = cfg?.Address ?? tag?.Address ?? tagName;
+                // 负载携带更完整的元数据，订阅端处理任意数据更方便
                 var payload = JsonSerializer.Serialize(new
                 {
                     tag = tagName,
                     address,
+                    description = cfg?.Description ?? tag?.Description ?? string.Empty,
+                    dataType = cfg?.DataType ?? tag?.DataType?.Name ?? string.Empty,
                     value = value?.ToString(),
                     ts = DateTime.Now.ToString("O")
                 });
                 var msg = new MqttApplicationMessageBuilder()
                     .WithTopic(BuildTopic(tag ?? new PLCTag { Name = tagName, Address = address }))
                     .WithPayload(Encoding.UTF8.GetBytes(payload))
-                    .WithQualityOfServiceLevel((MqttQualityOfServiceLevel)(int)Config.Qos)
-                    .WithRetainFlag(Config.Retain)
+                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                    .WithRetainFlag(false)
                     .Build();
                 await _client.PublishAsync(msg, CancellationToken.None);
                 PublishedCount++;
@@ -348,13 +315,58 @@ namespace PLCTesting.Services
         private async Task PublishAllSelectedAsync()
         {
             if (!_isRunning || !Config.Enabled || !_client.IsConnected) return;
-            var tags = _connection.GetAllTagsSnapshot();
-            foreach (var tag in tags)
+            // 连接/重连后，按配置发布一次当前快照
+            foreach (var p in _registry.Points.Where(p => p.PublishMqtt))
             {
-                if (!IsTagSelected(tag)) continue;
-                await PublishTagAsync(tag.Name, tag.Value);
+                var tag = _connection.GetTag(p.Name);
+                if (tag != null)
+                    await PublishTagAsync(tag.Name, tag.Value);
             }
         }
+
+        /// <summary>
+        /// 发布任意数据（不依赖 PLC 标签）：计算结果、外部系统数据、定时采集值等。
+        /// 仅当 MQTT 已启用且已连接时发送；主题固定为 基准前缀/address。
+        /// </summary>
+        /// <param name="name">数据点名称（载荷 tag 字段，也是日志 TagName）</param>
+        /// <param name="address">MQTT 主题末段（通常同 name；可指定更友好的主题路径）</param>
+        /// <param name="value">任意值（数字、字符串、bool 等）</param>
+        /// <param name="description">业务描述，随负载发出</param>
+        /// <param name="dataType">类型字符串，随负载发出</param>
+        public async Task PublishCustomAsync(string name, string address, object value, string description, string dataType)
+        {
+            if (!Config.Enabled || !_client.IsConnected) return;
+            try
+            {
+                var topic = $"{Config.BaseTopic.Trim('/')}/{address}";
+                var payload = JsonSerializer.Serialize(new
+                {
+                    tag = name,
+                    address,
+                    description = description ?? string.Empty,
+                    dataType = dataType ?? string.Empty,
+                    value = value?.ToString(),
+                    ts = DateTime.Now.ToString("O")
+                });
+                var msg = new MqttApplicationMessageBuilder()
+                    .WithTopic(topic)
+                    .WithPayload(Encoding.UTF8.GetBytes(payload))
+                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                    .WithRetainFlag(false)
+                    .Build();
+                await _client.PublishAsync(msg, CancellationToken.None);
+                PublishedCount++;
+            }
+            catch (Exception ex)
+            {
+                LastError = $"发布 {name} 失败：{ex.Message}";
+                Debug.WriteLine(LastError);
+            }
+        }
+
+        /// <summary>IMessagePublisher 实现：委托给 PublishCustomAsync。</summary>
+        Task IMessagePublisher.PublishAsync(string name, string address, object value, string description, string dataType)
+            => PublishCustomAsync(name, address, value, description, dataType);
 
         /// <summary>仅用于配置界面的「测试连接」：连接后立刻断开，不改变运行态。</summary>
         public async Task<bool> TestConnectionAsync()
@@ -411,8 +423,6 @@ namespace PLCTesting.Services
             if (_disposed) return;
             _disposed = true;
             _stopRequested = true;
-            _publishTimer?.Stop();
-            _publishTimer?.Dispose();
             _connection.TagValueChanged -= OnTagValueChanged;
             try { _client.DisconnectAsync().GetAwaiter().GetResult(); } catch { /* 忽略 */ }
             _client?.Dispose();

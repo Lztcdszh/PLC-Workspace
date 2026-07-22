@@ -30,7 +30,7 @@
         </ResourceDictionary>
     </local:PlcControlBase.Resources>
 
-    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}">
+    <Border Style="{StaticResource PlcCardBorder}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

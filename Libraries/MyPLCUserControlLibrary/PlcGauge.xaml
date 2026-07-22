@@ -11,7 +11,7 @@
         </ResourceDictionary>
     </local:PlcControlBase.Resources>
 
-    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}" Padding="6">
+    <Border Style="{StaticResource PlcCardBorder}" Padding="6">
         <Canvas x:Name="PART_Canvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False">
             <!-- 背景轨道 -->
             <Path x:Name="PART_Track" StrokeEndLineCap="Round" StrokeStartLineCap="Round"/>

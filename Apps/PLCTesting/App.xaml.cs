@@ -18,6 +18,36 @@ namespace PLCTesting
     /// </summary>
     public partial class App
     {
+        // 强制 PerMonitorV2 DPI 感知：本工程 UseWindowsForms=true，.NET 运行时会把 DPI 模式
+        // 降级为 SystemAware，导致高分屏（含不同缩放的多屏）下整窗被位图拉伸、界面发糊。
+        // 必须在 WPF/WinForms 初始化之前用 Win32 API 锁定，否则后续设置会被忽略。
+        private const int DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
+        private const int PROCESS_PER_MONITOR_DPI_AWARE_V2 = 3;
+        private const int PROCESS_PER_MONITOR_DPI_AWARE = 2;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetProcessDpiAwarenessContext(int value);
+
+        [System.Runtime.InteropServices.DllImport("shcore.dll")]
+        private static extern int SetProcessDpiAwareness(int value);
+
+        static App()
+        {
+            try
+            {
+                // 优先 V2：先试 user32 的 Context API（返回 true=成功），
+                // 再试 shcore 的 V2 枚举值（返回 S_OK=0 为成功）。
+                // 若两者都被运行时抢先占用（极少），则退而求其次锁定 PerMonitor（仍比 SystemAware 清晰）。
+                bool v2 = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+                if (!v2 && SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE_V2) != 0)
+                {
+                    // V2 均失败 -> 至少 PerMonitor
+                    SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+                }
+            }
+            catch { /* 极少数系统不支持时回退框架默认，不影响启动 */ }
+        }
+
         private NotifyIcon _trayIcon;
         private MainWindow _mainWindow;
         private bool _forceClose;
@@ -124,7 +154,7 @@ namespace PLCTesting
 
         private void SetupTrayIcon()
         {
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "tray.ico");
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
             _trayIcon = new NotifyIcon
             {
                 Icon = File.Exists(iconPath) ? new Icon(iconPath) : SystemIcons.Application,

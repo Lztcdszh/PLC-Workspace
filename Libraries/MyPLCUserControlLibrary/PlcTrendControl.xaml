@@ -7,6 +7,18 @@
              mc:Ignorable="d"
              ToolTip="{Binding ToolTipText, RelativeSource={RelativeSource Self}}">
 
+    <local:PlcControlBase.ContextMenu>
+        <ContextMenu x:Name="TrendContextMenu">
+            <MenuItem Header="属性设置..." Click="OpenSettings_Click"/>
+            <Separator/>
+            <MenuItem Header="自动缩放 Y 轴" IsCheckable="True" IsChecked="{Binding AutoScaleY, Mode=TwoWay}"/>
+            <MenuItem Header="启用报警" IsCheckable="True" IsChecked="{Binding AlarmEnabled, Mode=TwoWay}"/>
+            <Separator/>
+            <MenuItem Header="暂停采样" IsCheckable="True" IsChecked="{Binding IsPaused, Mode=TwoWay}"/>
+            <MenuItem Header="清空数据" Click="ClearData_Click"/>
+        </ContextMenu>
+    </local:PlcControlBase.ContextMenu>
+
     <local:PlcControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -20,7 +32,6 @@
             Background="{Binding Background, RelativeSource={RelativeSource Self}}"
             BorderBrush="{StaticResource PlcBorderBrush}"
             BorderThickness="1"
-            Effect="{StaticResource PlcShadow}"
             SnapsToDevicePixels="True"
             UseLayoutRounding="True">
         <Grid>

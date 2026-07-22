@@ -17,23 +17,29 @@
         </ResourceDictionary>
     </local:PlcControlBase.Resources>
 
-    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}" Padding="10,8">
+    <Border Style="{StaticResource PlcCardBorder}" Padding="10,8">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 状态指示灯 -->
+            <!-- 状态指示灯（清晰辉光：径向渐变模拟，不依赖 DropShadowEffect） -->
+            <Ellipse x:Name="PART_IndicatorGlow"
+                     Grid.Column="0" Width="26" Height="26" Margin="0"
+                     Opacity="0.5" IsHitTestVisible="False">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Color="#000000" Offset="0.5"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
             <Ellipse x:Name="PART_Indicator"
                      Grid.Column="0"
                      Width="18" Height="18" Margin="2"
                      Fill="Gray"
-                     Stroke="{StaticResource PlcBorderBrush}" StrokeThickness="1">
-                <Ellipse.Effect>
-                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.5" Color="#000000"/>
-                </Ellipse.Effect>
-            </Ellipse>
+                     Stroke="{StaticResource PlcBorderBrush}" StrokeThickness="1"/>
 
             <!-- 状态文本 + 数值 -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">

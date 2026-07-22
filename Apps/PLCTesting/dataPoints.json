@@ -1,0 +1,18 @@
+[
+  {
+    "Name": "DB1.DBW230",
+    "Address": "DB1.DBW230",
+    "DataType": "Int16",
+    "Description": "小车状态",
+    "LogToDb": true,
+    "PublishMqtt": true
+  },
+  {
+    "Name": "DB1.DBB172",
+    "Address": "DB1.DBB172",
+    "DataType": "UInt8",
+    "Description": "小车故障代码",
+    "LogToDb": true,
+    "PublishMqtt": true
+  }
+]

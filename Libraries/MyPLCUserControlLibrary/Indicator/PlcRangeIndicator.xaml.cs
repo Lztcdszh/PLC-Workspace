@@ -565,6 +565,24 @@ namespace MyPLCUserControlLibrary
     }
 
     /// <summary>
+    /// 布尔取反转换器（用于"自动缩放"开启时禁用 Min/Max 输入框）。
+    /// </summary>
+    public class InverseBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b) return !b;
+            return true;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b) return !b;
+            return false;
+        }
+    }
+
+    /// <summary>
     /// 范围颜色转换器（可选）
     /// </summary>
     public class RangeColorConverter : IValueConverter

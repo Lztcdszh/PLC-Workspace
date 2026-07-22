@@ -7,6 +7,9 @@ obj/
 # Build output variants (irregular dir names used during dev)
 bin*/
 [Bb]in*/
+# 异常命名的自包含/发布产物目录（如 binRelease2net8.0-windows 2）
+binRelease*/
+[Bb]in[Rr]elease*/
 Release*/
 Debug*/
 [Dd]ebug/
@@ -14,6 +17,14 @@ Debug*/
 *.Debug/
 out/
 dist/
+
+# Android / Gradle build outputs (e.g. DingTalkPunch)
+build/
+.gradle/
+*.apk
+*.aar
+*.dex
+local.properties
 
 # Self-contained publish folders
 *SelfContained*/
@@ -31,6 +42,9 @@ Publish/
 
 # Verification screenshots (not source)
 **/screenshots/*.png
+
+# Stray duplicate installer copy (do not recreate under Apps/PLCTesting)
+Apps/PLCTesting/PLCTest/
 
 # ============ IDE / Editor ============
 .vs/

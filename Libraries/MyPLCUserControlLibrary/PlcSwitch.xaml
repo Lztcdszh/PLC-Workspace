@@ -15,16 +15,8 @@
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4">
         <Canvas x:Name="PART_Canvas" Width="52" Height="28" VerticalAlignment="Center">
             <Border x:Name="PART_Track" Width="52" Height="28" CornerRadius="14"
-                    Background="{StaticResource PlcInfoBrush}">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.18" Color="#000000"/>
-                </Border.Effect>
-            </Border>
-            <Ellipse x:Name="PART_Thumb" Width="22" Height="22" Fill="White" Canvas.Left="3" Canvas.Top="3">
-                <Ellipse.Effect>
-                    <DropShadowEffect BlurRadius="3" ShadowDepth="1" Opacity="0.4"/>
-                </Ellipse.Effect>
-            </Ellipse>
+                    Background="{StaticResource PlcInfoBrush}"/>
+            <Ellipse x:Name="PART_Thumb" Width="22" Height="22" Fill="White" Canvas.Left="3" Canvas.Top="3"/>
         </Canvas>
         <TextBlock x:Name="PART_StateText" Text="OFF" Margin="8,0,0,0"
                    FontFamily="{StaticResource PlcFontFamily}"

@@ -16,14 +16,19 @@
     </local:PlcControlBase.Resources>
 
     <Grid>
+        <!-- 清晰辉光：用径向渐变模拟，不依赖 DropShadowEffect -->
+        <Ellipse x:Name="PART_Glow" Margin="-8" Opacity="0.45" IsHitTestVisible="False">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#000000" Offset="0.5"/>
+                    <GradientStop Color="Transparent" Offset="1"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
         <Ellipse x:Name="PART_Ellipse"
                  Stroke="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
                  StrokeThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
-                 Fill="{Binding CurrentBrush, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}, FallbackValue=Gray}">
-            <Ellipse.Effect>
-                <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.45" Color="#000000"/>
-            </Ellipse.Effect>
-        </Ellipse>
+                 Fill="{Binding CurrentBrush, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}, FallbackValue=Gray}"/>
         <TextBlock x:Name="PART_ValueText"
                    Text="{Binding DisplayText, RelativeSource={RelativeSource AncestorType=local:PlcRangeIndicator}}"
                    HorizontalAlignment="Center"

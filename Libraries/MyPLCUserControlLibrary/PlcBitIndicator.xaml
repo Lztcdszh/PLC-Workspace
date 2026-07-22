@@ -11,8 +11,7 @@
         </ResourceDictionary>
     </local:PlcControlBase.Resources>
 
-    <Border Background="{StaticResource PlcDarkSurfaceBrush}" CornerRadius="8" Padding="8"
-            Effect="{StaticResource PlcSoftShadow}">
+    <Border Background="{StaticResource PlcDarkSurfaceBrush}" CornerRadius="8" Padding="8">
         <WrapPanel x:Name="PART_Lamps"
                    Orientation="{Binding Orientation, RelativeSource={RelativeSource AncestorType=local:PlcBitIndicator}}"/>
     </Border>

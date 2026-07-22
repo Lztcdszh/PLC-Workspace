@@ -11,7 +11,6 @@
             <Setter Property="Padding" Value="12"/>
             <Setter Property="Margin" Value="8"/>
             <Setter Property="MinWidth" Value="210"/>
-            <Setter Property="Effect" Value="{StaticResource PlcSoftShadow}"/>
         </Style>
         <Style x:Key="DemoTitle" TargetType="TextBlock" BasedOn="{StaticResource PlcSecondaryText}">
             <Setter Property="FontSize" Value="12"/>

@@ -1,0 +1,4 @@
+// Repositories are declared in build.gradle (buildscript + allprojects) so the
+// classic classpath approach resolves everything through the Aliyun mirrors.
+rootProject.name = "DingTalkPunch"
+include(":app")

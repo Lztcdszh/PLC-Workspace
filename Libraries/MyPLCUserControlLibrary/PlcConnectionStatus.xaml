@@ -15,11 +15,18 @@
             BorderBrush="{StaticResource PlcBorderBrush}" BorderThickness="1"
             CornerRadius="{StaticResource PlcPillRadius}" Padding="10,5">
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <Ellipse x:Name="PART_Dot" Width="12" Height="12" Fill="{StaticResource PlcDangerBrush}" VerticalAlignment="Center">
-                <Ellipse.Effect>
-                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.55" Color="#F56C6C"/>
-                </Ellipse.Effect>
-            </Ellipse>
+            <!-- 清晰辉光：径向渐变模拟，不依赖 DropShadowEffect -->
+            <Grid Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,2,0">
+                <Ellipse x:Name="PART_DotGlow" Margin="-5" Opacity="0.55" IsHitTestVisible="False">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush>
+                            <GradientStop Color="#F56C6C" Offset="0.5"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <Ellipse x:Name="PART_Dot" Width="12" Height="12" Fill="{StaticResource PlcDangerBrush}"/>
+            </Grid>
             <TextBlock x:Name="PART_StatusText" Text="未连接" Margin="8,0,4,0"
                        FontFamily="{StaticResource PlcFontFamily}"
                        FontSize="12" FontWeight="SemiBold"

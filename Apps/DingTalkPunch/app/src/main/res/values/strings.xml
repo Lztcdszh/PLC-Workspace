@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">钉钉定时打卡</string>
+    <string name="channel_name">定时打卡提醒</string>
+    <string name="channel_desc">到点自动打开钉钉打卡</string>
+    <string name="notification_text">到点了，正在打开钉钉打卡…</string>
+    <string name="accessibility_desc">用于自动点击钉钉打卡按钮。开启后可在到点时自动完成打卡。</string>
+    <string name="add_time">添加打卡时间</string>
+    <string name="auto_click">开启自动打卡（需无障碍权限）</string>
+    <string name="open_accessibility">开启无障碍服务</string>
+    <string name="open_exact_alarm">授予精确闹钟权限</string>
+    <string name="open_battery">忽略电池优化</string>
+    <string name="open_xiaomi">小米：自启动/后台设置</string>
+    <string name="save_schedule">保存并启用定时</string>
+    <string name="delete">删除</string>
+    <string name="no_times">尚未添加打卡时间</string>
+    <string name="saved">已保存并启用</string>
+    <string name="next_alarm">下次打卡：%1$s</string>
+    <string name="dingtalk_not_installed">未检测到钉钉，请先安装钉钉</string>
+</resources>

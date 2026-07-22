@@ -38,12 +38,8 @@
     <CornerRadius x:Key="PlcControlRadius">6</CornerRadius>
     <CornerRadius x:Key="PlcPillRadius">14</CornerRadius>
 
-    <!-- ============ 阴影 ============ -->
-    <DropShadowEffect x:Key="PlcShadow" BlurRadius="10" ShadowDepth="2" Direction="270"
-                      Opacity="0.14" Color="#20242B"/>
-    <DropShadowEffect x:Key="PlcSoftShadow" BlurRadius="5" ShadowDepth="1" Direction="270"
-                      Opacity="0.12" Color="#20242B"/>
-    <DropShadowEffect x:Key="PlcGlow" BlurRadius="8" ShadowDepth="0" Opacity="0.55" Color="#409EFF"/>
+    <!-- ============ 阴影（已移除：DropShadowEffect 会导致高分屏离屏位图拉伸发糊；
+         卡片/控件的立体感改由边框 + 背板模拟，状态灯辉光改由径向渐变模拟） ============ -->
 
     <!-- ============ 通用字体 ============ -->
     <FontFamily x:Key="PlcFontFamily">Segoe UI, Microsoft YaHei, PingFang SC, sans-serif</FontFamily>

@@ -17,7 +17,7 @@
         </ResourceDictionary>
     </local:PlcControlBase.Resources>
 
-    <Border Style="{StaticResource PlcCardBorder}" Effect="{StaticResource PlcSoftShadow}" Padding="4,2">
+    <Border Style="{StaticResource PlcCardBorder}" Padding="4,2">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

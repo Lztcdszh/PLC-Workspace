@@ -24,6 +24,9 @@ namespace PLCTesting.Models
         /// <summary>数据类型，例如 Int16 / UInt8</summary>
         public string DataType { get; set; } = string.Empty;
 
+        /// <summary>标签描述（来自 PLCTag.Description，便于下游识别业务含义）</summary>
+        public string Description { get; set; } = string.Empty;
+
         /// <summary>变化发生时间（本地时间）</summary>
         public DateTime TimeStamp { get; set; }
     }

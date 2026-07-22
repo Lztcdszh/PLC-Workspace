@@ -57,7 +57,7 @@
                    Visibility="{Binding ShowCaption, RelativeSource={RelativeSource AncestorType=local:PlcNumericInput}, Converter={StaticResource BoolToVis}}"/>
 
         <Border x:Name="PART_Host" Grid.Row="1"
-                Style="{StaticResource PlcInputBorder}" Effect="{StaticResource PlcSoftShadow}">
+                Style="{StaticResource PlcInputBorder}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -82,7 +82,7 @@
         <Popup x:Name="PART_Keypad" Grid.Row="1" PlacementTarget="{Binding ElementName=PART_Host}" Placement="Bottom"
                StaysOpen="False" AllowsTransparency="True" Width="246">
             <Border Background="{StaticResource PlcSurfaceBrush}" BorderBrush="{StaticResource PlcBorderBrush}"
-                    BorderThickness="1" CornerRadius="10" Padding="10" Effect="{StaticResource PlcShadow}">
+                    BorderThickness="1" CornerRadius="10" Padding="10">
                 <StackPanel>
                     <TextBox x:Name="PART_Pending" IsReadOnly="True" FontSize="20" FontWeight="Bold"
                              FontFamily="{StaticResource PlcFontFamily}"
