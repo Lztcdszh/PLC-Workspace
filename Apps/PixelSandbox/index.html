@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>像素沙盒 · Pixel Sandbox</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #1b1f2a; overflow: hidden;
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    user-select: none;
+  }
+  #wrap {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #game {
+    background: #87ceeb;
+    image-rendering: pixelated;
+    box-shadow: 0 0 0 3px #0d0f14, 0 12px 40px rgba(0,0,0,.5);
+    border-radius: 6px;
+    max-width: 100%; max-height: 100%;
+  }
+  #hint {
+    position: fixed; left: 12px; top: 12px;
+    color: #fff; font-size: 13px; line-height: 1.6;
+    text-shadow: 0 1px 2px #000; pointer-events: none;
+    background: rgba(0,0,0,.35); padding: 8px 12px; border-radius: 8px;
+  }
+  #hint b { color: #ffe27a; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="960" height="600"></canvas>
+</div>
+<div id="hint">
+  <div><b>移动</b>：A / D 或 ← →　　<b>跳跃</b>：W / 空格 / ↑</div>
+  <div><b>挖方块</b>：鼠标左键　　<b>放方块</b>：鼠标右键</div>
+  <div><b>选方块</b>：1 土 · 2 木 · 3 草 · 4 叶 · 5 石</div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const VW = canvas.width, VH = canvas.height;
+
+  // ---------- 世界参数 ----------
+  const TILE = 32;
+  const COLS = 80, ROWS = 45;
+  const WORLD_W = COLS * TILE, WORLD_H = ROWS * TILE;
+
+  // 方块类型
+  const AIR = 0, GRASS = 1, DIRT = 2, WOOD = 3, LEAVES = 4, STONE = 5, BEDROCK = 6;
+  const NAMES = { 1: "草", 2: "土", 3: "木", 4: "叶", 5: "石" };
+
+  // 简单确定性随机
+  let seed = 1337;
+  function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+
+  // ---------- 生成地形 ----------
+  const world = [];
+  function genWorld() {
+    for (let r = 0; r < ROWS; r++) {
+      world[r] = [];
+      for (let c = 0; c < COLS; c++) world[r][c] = AIR;
+    }
+    // 底部基岩
+    for (let c = 0; c < COLS; c++) world[ROWS - 1][c] = BEDROCK;
+
+    // 起伏地表
+    const surface = [];
+    for (let c = 0; c < COLS; c++) {
+      const h = 22 + Math.floor(Math.sin(c * 0.18) * 3 + Math.sin(c * 0.07) * 2 + rnd() * 2);
+      surface[c] = h;
+      for (let r = h; r < ROWS - 1; r++) {
+        world[r][c] = (r === h) ? GRASS : (r < h + 4 ? DIRT : (r < h + 9 ? DIRT : STONE));
+      }
+    }
+    // 种树（木+叶）
+    for (let c = 3; c < COLS - 3; c++) {
+      if (rnd() < 0.10) {
+        const top = surface[c];
+        const trunk = 3 + Math.floor(rnd() * 3);
+        for (let i = 1; i <= trunk; i++) if (top - i >= 0) world[top - i][c] = WOOD;
+        const cy = top - trunk;
+        for (let dy = -2; dy <= 1; dy++)
+          for (let dx = -2; dx <= 2; dx++) {
+            const rr = cy + dy, cc = c + dx;
+            if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS && world[rr][cc] === AIR)
+              world[rr][cc] = LEAVES;
+          }
+        world[cy][c] = WOOD;
+      }
+    }
+  }
+  genWorld();
+
+  // ---------- 玩家（像素小人） ----------
+  const player = {
+    x: 5 * TILE, y: 10 * TILE, w: 20, h: 44,
+    vx: 0, vy: 0, onGround: false, face: 1, walk: 0,
+    speed: 180, jump: 430,
+  };
+  // 落在地面上
+  (function dropPlayer() {
+    for (let r = 0; r < ROWS; r++) {
+      if (world[r][5] !== AIR) { player.y = r * TILE - player.h - 1; break; }
+    }
+  })();
+
+  // ---------- 输入 ----------
+  const keys = {};
+  let selected = DIRT;
+  const mouse = { x: 0, y: 0, down: false, btn: 0 };
+  let camX = 0, camY = 0;
+
+  window.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === "1") selected = DIRT;
+    if (e.key === "2") selected = WOOD;
+    if (e.key === "3") selected = GRASS;
+    if (e.key === "4") selected = LEAVES;
+    if (e.key === "5") selected = STONE;
+    if ([" ", "arrowup", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
+  });
+  window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+  function canvasPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
+    return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+  }
+  canvas.addEventListener("mousemove", e => { const p = canvasPos(e); mouse.x = p.x; mouse.y = p.y; });
+  canvas.addEventListener("mousedown", e => {
+    const p = canvasPos(e); mouse.x = p.x; mouse.y = p.y; mouse.down = true; mouse.btn = e.button;
+    e.preventDefault();
+  });
+  window.addEventListener("mouseup", () => { mouse.down = false; });
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+  // ---------- 碰撞辅助 ----------
+  function solidAt(c, r) {
+    if (c < 0 || c >= COLS) return true;      // 左右墙
+    if (r < 0) return false;                  // 顶部允许
+    if (r >= ROWS) return false;
+    return world[r][c] !== AIR && world[r][c] !== LEAVES; // 树叶可穿过
+  }
+
+  function collideX() {
+    const top = Math.floor(player.y / TILE);
+    const bottom = Math.floor((player.y + player.h - 1) / TILE);
+    if (player.vx > 0) {
+      const c = Math.floor((player.x + player.w - 1) / TILE);
+      for (let r = top; r <= bottom; r++) if (solidAt(c, r)) { player.x = c * TILE - player.w - 0.01; player.vx = 0; break; }
+    } else if (player.vx < 0) {
+      const c = Math.floor(player.x / TILE);
+      for (let r = top; r <= bottom; r++) if (solidAt(c, r)) { player.x = (c + 1) * TILE + 0.01; player.vx = 0; break; }
+    }
+  }
+  function collideY() {
+    const left = Math.floor(player.x / TILE);
+    const right = Math.floor((player.x + player.w - 1) / TILE);
+    player.onGround = false;
+    if (player.vy > 0) {
+      const r = Math.floor((player.y + player.h - 1) / TILE);
+      for (let c = left; c <= right; c++) if (solidAt(c, r)) { player.y = r * TILE - player.h - 0.01; player.vy = 0; player.onGround = true; break; }
+    } else if (player.vy < 0) {
+      const r = Math.floor(player.y / TILE);
+      for (let c = left; c <= right; c++) if (solidAt(c, r)) { player.y = (r + 1) * TILE + 0.01; player.vy = 0; break; }
+    }
+  }
+
+  // ---------- 挖 / 放 ----------
+  function tileAtMouse() {
+    const wx = mouse.x + camX, wy = mouse.y + camY;
+    return { c: Math.floor(wx / TILE), r: Math.floor(wy / TILE) };
+  }
+  function isBedrock(c, r) { return world[r] && world[r][c] === BEDROCK; }
+  function playerOverlapsTile(c, r) {
+    const tx = c * TILE, ty = r * TILE;
+    return player.x < tx + TILE && player.x + player.w > tx && player.y < ty + TILE && player.y + player.h > ty;
+  }
+  function doMine() {
+    const { c, r } = tileAtMouse();
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+    if (world[r][c] === AIR || world[r][c] === BEDROCK) return;
+    world[r][c] = AIR;
+  }
+  function doPlace() {
+    const { c, r } = tileAtMouse();
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+    if (world[r][c] !== AIR) return;
+    if (playerOverlapsTile(c, r)) return;
+    // 必须贴着已有方块才能放
+    const near = solidAt(c - 1, r) || solidAt(c + 1, r) || solidAt(c, r - 1) || solidAt(c, r + 1);
+    if (!near) return;
+    world[r][c] = selected;
+  }
+
+  // ---------- 云 & 太阳 ----------
+  const clouds = [];
+  for (let i = 0; i < 7; i++) clouds.push({
+    x: rnd() * WORLD_W, y: 30 + rnd() * 160, s: 0.7 + rnd() * 0.8, sp: 6 + rnd() * 12,
+  });
+  let sunX = VW * 0.3, t = 0;
+
+  // ---------- 绘制方块 ----------
+  function drawTile(type, x, y) {
+    switch (type) {
+      case GRASS:
+        ctx.fillStyle = "#6b4a2b"; ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = "#5fae3a"; ctx.fillRect(x, y, TILE, 8);
+        ctx.fillStyle = "#74c94a"; ctx.fillRect(x + 3, y + 3, 4, 3); ctx.fillRect(x + 18, y + 4, 4, 3);
+        break;
+      case DIRT:
+        ctx.fillStyle = "#7a5230"; ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = "#6a4527";
+        ctx.fillRect(x + 5, y + 6, 4, 4); ctx.fillRect(x + 20, y + 12, 5, 4); ctx.fillRect(x + 12, y + 22, 4, 4);
+        break;
+      case WOOD:
+        ctx.fillStyle = "#9c6b3f"; ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = "#7d5430";
+        ctx.fillRect(x + 6, y, 3, TILE); ctx.fillRect(x + 18, y, 3, TILE);
+        ctx.fillRect(x, y + 10, TILE, 3); ctx.fillRect(x, y + 22, TILE, 3);
+        break;
+      case LEAVES:
+        ctx.fillStyle = "#3f9b46"; ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = "#358a3d";
+        ctx.fillRect(x + 4, y + 4, 6, 6); ctx.fillRect(x + 18, y + 8, 7, 7); ctx.fillRect(x + 10, y + 18, 6, 6);
+        break;
+      case STONE:
+        ctx.fillStyle = "#8a8f99"; ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = "#72767f";
+        ctx.fillRect(x + 4, y + 5, 7, 5); ctx.fillRect(x + 16, y + 14, 9, 6); ctx.fillRect(x + 8, y + 22, 6, 5);
+        break;
+      case BEDROCK:
+        ctx.fillStyle = "#2b2f38"; ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = "#3a3f4a";
+        ctx.fillRect(x + 3, y + 3, 6, 6); ctx.fillRect(x + 18, y + 10, 7, 7); ctx.fillRect(x + 9, y + 20, 6, 6);
+        break;
+    }
+    ctx.strokeStyle = "rgba(0,0,0,.10)"; ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+  }
+
+  // ---------- 像素小人 ----------
+  function drawPlayer() {
+    const px = player.x - camX, py = player.y - camY, w = player.w, h = player.h;
+    const f = player.face;
+    ctx.save();
+    // 身体（像素风，用色块拼）
+    const skin = "#ffce9e", shirt = "#3da5ff", pants = "#36506b", hair = "#5a3a22";
+    // 腿（走路摆动）
+    const swing = player.onGround ? Math.sin(player.walk) * 4 : 3;
+    ctx.fillStyle = pants;
+    ctx.fillRect(px + 3, py + h - 14, 6, 14 + (swing > 0 ? 0 : swing));
+    ctx.fillRect(px + w - 9, py + h - 14, 6, 14 - (swing > 0 ? swing : 0));
+    // 身体
+    ctx.fillStyle = shirt;
+    ctx.fillRect(px + 2, py + 18, w - 4, h - 30);
+    // 手臂
+    ctx.fillStyle = skin;
+    const armY = py + 20 + (player.onGround ? Math.sin(player.walk) * 3 : 0);
+    if (f > 0) ctx.fillRect(px + w - 2, armY, 4, 12); else ctx.fillRect(px - 2, armY, 4, 12);
+    // 头
+    ctx.fillStyle = skin;
+    ctx.fillRect(px + 3, py + 2, w - 6, 16);
+    // 头发
+    ctx.fillStyle = hair;
+    ctx.fillRect(px + 3, py + 2, w - 6, 5);
+    ctx.fillRect(px + 3, py + 2, 3, 9); ctx.fillRect(px + w - 6, py + 2, 3, 9);
+    // 眼睛（面向）
+    ctx.fillStyle = "#222";
+    if (f > 0) { ctx.fillRect(px + w - 9, py + 9, 2, 3); ctx.fillRect(px + w - 14, py + 9, 2, 3); }
+    else { ctx.fillRect(px + 7, py + 9, 2, 3); ctx.fillRect(px + 12, py + 9, 2, 3); }
+    ctx.restore();
+  }
+
+  // ---------- 主循环 ----------
+  let last = performance.now();
+  function update(dt) {
+    t += dt;
+    // 输入 → 速度
+    let ax = 0;
+    if (keys["a"] || keys["arrowleft"]) ax -= 1;
+    if (keys["d"] || keys["arrowright"]) ax += 1;
+    player.vx = ax * player.speed;
+    if (ax !== 0) player.face = ax > 0 ? 1 : -1;
+    if (player.onGround && ax !== 0) player.walk += dt * 12;
+
+    if ((keys["w"] || keys[" "] || keys["arrowup"]) && player.onGround) {
+      player.vy = -player.jump; player.onGround = false;
+    }
+    // 重力
+    player.vy += 1100 * dt;
+    if (player.vy > 700) player.vy = 700;
+
+    player.x += player.vx * dt; collideX();
+    player.y += player.vy * dt; collideY();
+
+    // 掉出世界保护
+    if (player.y > WORLD_H) { player.x = 5 * TILE; player.y = 0; player.vy = 0; }
+
+    // 鼠标交互（带节流，按住可连续）
+    if (mouse.down) {
+      if (mouse.btn === 0) doMine();
+      else if (mouse.btn === 2) doPlace();
+    }
+
+    // 相机跟随
+    camX = Math.max(0, Math.min(WORLD_W - VW, player.x + player.w / 2 - VW / 2));
+    camY = Math.max(0, Math.min(WORLD_H - VH, player.y + player.h / 2 - VH / 2));
+
+    // 太阳横移
+    sunX += 12 * dt; if (sunX > VW + 80) sunX = -80;
+
+    // 云朵漂移
+    for (const cl of clouds) {
+      cl.x += cl.sp * dt;
+      if (cl.x > WORLD_W + 200) cl.x = -200;
+    }
+  }
+
+  function drawSky() {
+    const g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, "#5fb6ef"); g.addColorStop(0.6, "#9fd8f5"); g.addColorStop(1, "#dff3ff");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  }
+  function drawSun() {
+    const sx = sunX, sy = 90 + Math.sin(t * 0.2) * 12;
+    const grd = ctx.createRadialGradient(sx, sy, 4, sx, sy, 70);
+    grd.addColorStop(0, "rgba(255,240,150,.9)"); grd.addColorStop(1, "rgba(255,240,150,0)");
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(sx, sy, 70, 0, 7); ctx.fill();
+    ctx.fillStyle = "#ffe24a"; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, 7); ctx.fill();
+  }
+  function drawCloud(cl) {
+    const cx = cl.x - camX * 0.4, cy = cl.y; // 视差
+    const s = cl.s;
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18 * s, 0, 7);
+    ctx.arc(cx + 20 * s, cy + 4 * s, 22 * s, 0, 7);
+    ctx.arc(cx + 44 * s, cy, 16 * s, 0, 7);
+    ctx.arc(cx + 22 * s, cy - 10 * s, 16 * s, 0, 7);
+    ctx.fill();
+  }
+  function drawWorld() {
+    const c0 = Math.max(0, Math.floor(camX / TILE));
+    const c1 = Math.min(COLS - 1, Math.ceil((camX + VW) / TILE));
+    const r0 = Math.max(0, Math.floor(camY / TILE));
+    const r1 = Math.min(ROWS - 1, Math.ceil((camY + VH) / TILE));
+    for (let r = r0; r <= r1; r++)
+      for (let c = c0; c <= c1; c++)
+        if (world[r][c] !== AIR) drawTile(world[r][c], c * TILE - camX, r * TILE - camY);
+  }
+  function drawCursor() {
+    const { c, r } = tileAtMouse();
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+    const x = c * TILE - camX, y = r * TILE - camY;
+    ctx.strokeStyle = (mouse.btn === 0) ? "rgba(255,80,80,.9)" : "rgba(120,255,120,.95)";
+    ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+  }
+  function drawHotbar() {
+    const items = [DIRT, WOOD, GRASS, LEAVES, STONE];
+    const bw = 44, gap = 8, total = items.length * bw + (items.length - 1) * gap;
+    const x0 = (VW - total) / 2, y0 = VH - 56;
+    ctx.fillStyle = "rgba(0,0,0,.4)";
+    ctx.fillRect(x0 - 10, y0 - 8, total + 20, bw + 16);
+    for (let i = 0; i < items.length; i++) {
+      const x = x0 + i * (bw + gap);
+      ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(x, y0, bw, bw);
+      drawTile(items[i], x, y0);
+      ctx.strokeStyle = (items[i] === selected) ? "#ffe27a" : "rgba(255,255,255,.25)";
+      ctx.lineWidth = (items[i] === selected) ? 3 : 1;
+      ctx.strokeRect(x + 1.5, y0 + 1.5, bw - 3, bw - 3);
+      ctx.fillStyle = "#fff"; ctx.font = "11px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText((i + 1) + " " + NAMES[items[i]], x + bw / 2, y0 + bw + 12);
+    }
+    ctx.textAlign = "left";
+  }
+
+  function render() {
+    drawSky();
+    drawSun();
+    for (const cl of clouds) drawCloud(cl);
+    drawWorld();
+    drawPlayer();
+    drawCursor();
+    drawHotbar();
+  }
+
+  function frame(now) {
+    let dt = (now - last) / 1000; last = now;
+    if (dt > 0.05) dt = 0.05;
+    update(dt);
+    render();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

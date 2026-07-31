@@ -177,6 +177,9 @@ namespace MyPLCUserControlLibrary
             };
         }
 
+        /// <summary>只读显示控件：与其他控件共用 TagName 时，沿用已注册（通常是可写控件声明的）类型，自身不抢占类型。</summary>
+        protected override bool IsWriteCapableControl => false;
+
         protected override void OnConnectionChangedInternal(IConnectionManager? oldConn, IConnectionManager? newConn)
         {
             _isConnected = newConn?.IsConnected ?? false;

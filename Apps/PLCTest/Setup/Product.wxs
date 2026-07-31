@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Product Id="*"
+           UpgradeCode="{6F3A2B1C-9E4D-4C7A-8B2E-1F5D9A3C7E21}"
+           Name="PLC 测试台"
+           Manufacturer="SZH"
+           Version="1.0.9"
+           Language="1033">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
+    <MajorUpgrade DowngradeErrorMessage="已安装更高版本，无法继续安装。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="ExeIcon" SourceFile="$(var.SourceDir)/PLCTesting.exe" />
+
+    <Feature Id="ProductFeature" Title="PLC 测试台" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentGroupRef Id="Shortcuts" />
+    </Feature>
+
+    <ComponentGroup Id="Shortcuts">
+      <ComponentRef Id="DesktopShortcutCmp" />
+      <ComponentRef Id="StartMenuShortcutCmp" />
+    </ComponentGroup>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="PLCTesting" />
+      </Directory>
+      <Directory Id="DesktopFolder" />
+      <Directory Id="ProgramMenuFolder" />
+    </Directory>
+
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcutCmp" Guid="{7A1B2C3D-4E5F-6A7B-8C9D-0E1F2A3B4C5D}">
+        <Shortcut Id="DesktopShortcut"
+                  Name="PLC 测试台"
+                  Description="PLC 测试台"
+                  Target="[INSTALLFOLDER]PLCTesting.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="ExeIcon" />
+        <RemoveFolder Id="RemoveDesktopFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\PLCTesting" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuSubDir" Name="PLC 测试台">
+        <Component Id="StartMenuShortcutCmp" Guid="{D5C4B3A2-1F0E-9D8C-7B6A-5F4E3D2C1B0A}">
+          <Shortcut Id="StartMenuShortcut"
+                    Name="PLC 测试台"
+                    Description="PLC 测试台"
+                    Target="[INSTALLFOLDER]PLCTesting.exe"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="ExeIcon" />
+          <RemoveFolder Id="RemoveProgramMenuSubDir" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\PLCTesting" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </DirectoryRef>
+  </Product>
+</Wix>

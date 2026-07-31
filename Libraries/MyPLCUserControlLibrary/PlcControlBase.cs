@@ -274,12 +274,13 @@ namespace MyPLCUserControlLibrary
             if (tag == null) return;
 
             tag.IsMonitored = IsMonitorTag;
-            if (!ContainsTagSafe(tag.Name))
+            var existing = _connection.GetTag(tag.Name);
+            if (existing == null)
             {
                 try
                 {
                     _connection.AddTag(tag);
-                    LogDebug(nameof(AutoRegisterTags), $"自动注册: {tag.Name} @ {tag.Address}");
+                    LogDebug(nameof(AutoRegisterTags), $"自动注册: {tag.Name} @ {tag.Address} [{tag.DataType.Name}]");
                     if (string.IsNullOrWhiteSpace(TagName))
                         TagName = tag.Name;
                 }
@@ -287,6 +288,29 @@ namespace MyPLCUserControlLibrary
                 {
                     Debug.WriteLine($"[{GetType().Name}] 自动注册失败: {ex.Message}");
                 }
+            }
+            else if (existing.DataType != tag.DataType)
+            {
+                // 同名标签已存在但类型不一致：常见于可写控件与只读显示共用 TagName。
+                // 可写控件声明的类型即写入依据，最具权威性，覆盖已有类型；
+                // 只读显示类则沿用已有类型，避免把字地址误改成浮点。
+                if (IsWriteCapableControl)
+                {
+                    existing.DataType = tag.DataType;
+                    existing.Value = tag.Value;
+                    LogDebug(nameof(AutoRegisterTags), $"同名标签类型冲突，按可写控件更新: {tag.Name} -> {tag.DataType.Name}");
+                }
+                else
+                {
+                    LogDebug(nameof(AutoRegisterTags), $"同名标签类型冲突，沿用已有: {tag.Name} ({existing.DataType.Name})");
+                }
+                if (string.IsNullOrWhiteSpace(TagName))
+                    TagName = tag.Name;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(TagName))
+                    TagName = tag.Name;
             }
         }
 
@@ -314,6 +338,13 @@ namespace MyPLCUserControlLibrary
                 return false;
             }
         }
+
+        /// <summary>
+        /// 该控件是否为可写控件。多个控件共用同一 <see cref="TagName"/> 时，可写控件声明的
+        /// <see cref="PLCTag.DataType"/> 视为权威并覆盖已有标签类型；只读/显示类控件应返回 false，
+        /// 以沿用已注册类型，避免把字地址（如 DBW）误改成浮点导致读取/写入宽度错位。
+        /// </summary>
+        protected virtual bool IsWriteCapableControl => true;
 
         #endregion
 

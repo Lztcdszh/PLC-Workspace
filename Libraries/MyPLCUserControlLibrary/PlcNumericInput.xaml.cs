@@ -194,12 +194,41 @@ namespace MyPLCUserControlLibrary
         {
             _isConnected = newConn?.IsConnected ?? false;
             if (!_isConnected) PART_Display.Text = DisconnectedText;
+            else RefreshDisplayFromTag();
         }
 
         protected override void OnConnectionStateChanged(bool isConnected)
         {
             _isConnected = isConnected;
-            if (!_isConnected) PART_Display.Text = DisconnectedText;
+            if (!isConnected)
+            {
+                PART_Display.Text = DisconnectedText;
+            }
+            else
+            {
+                // 重连后主动拉一次当前标签值刷新显示，
+                // 避免监控线程首次回读失败时控件永远卡在"—"。
+                RefreshDisplayFromTag();
+            }
+        }
+
+        /// <summary>从当前标签值刷新显示（连接恢复或标签变化时调用）。</summary>
+        private void RefreshDisplayFromTag()
+        {
+            try
+            {
+                var conn = ConnectionManager;
+                if (conn == null || !_isConnected) return;
+                string? name = SubscriptionTagName;
+                if (string.IsNullOrWhiteSpace(name)) return;
+                var tag = conn.GetTag(name);
+                if (tag?.Value != null)
+                {
+                    _rawValue = tag.Value;
+                    PART_Display.Text = FormatValue(tag.Value);
+                }
+            }
+            catch { /* 静默失败，监控线程下次会再触发 OnPlcValueReceived */ }
         }
 
         /// <summary>只读模式时退化为中性显示外观（隐藏编辑图标、灰色边框），避免被误认为可输入。</summary>
@@ -215,7 +244,13 @@ namespace MyPLCUserControlLibrary
 
         protected override void OnPlcValueReceived(object? value)
         {
-            if (!_isConnected || value == null) return;
+            if (!_isConnected) return;
+            if (value == null)
+            {
+                // 监控线程读失败时不要用 null 覆盖显示（保留旧值或"写入失败"短提示），
+                // 等下次回读成功再刷新。
+                return;
+            }
             _rawValue = value;
             PART_Display.Text = FormatValue(value);
         }
@@ -319,7 +354,33 @@ namespace MyPLCUserControlLibrary
 
             bool okWrite = await WriteTagAsync(TagName, value);
             PART_Keypad.IsOpen = false;
-            if (!okWrite) PART_Display.Text = DisconnectedText;
+            if (okWrite)
+            {
+                // 写入成功：立刻把 PART_Display 同步成用户输入的值，
+                // 避免在监控线程回读前显示旧值或"—"。
+                _rawValue = value;
+                PART_Display.Text = FormatValue(value);
+            }
+            else
+            {
+                // 写入失败：显示明确的"写入失败"提示（1.5 秒后回退到当前 PLC 值），
+                // 而不是用断线占位符"—"覆盖，避免与真正断线状态混淆。
+                PART_Display.Text = "写入失败";
+                _ = RestoreDisplayAfterDelay(1500);
+            }
+        }
+
+        private async Task RestoreDisplayAfterDelay(int ms)
+        {
+            try
+            {
+                // 不带 ConfigureAwait(false)，回到原 SynchronizationContext(UI 线程)继续，
+                // 避免 Dispatcher.BeginInvoke 触发 CS4014 警告，也减少一次跨线程封送。
+                await Task.Delay(ms);
+                if (PART_Display.Text == "写入失败")
+                    RefreshDisplayFromTag();
+            }
+            catch { }
         }
 
         #endregion

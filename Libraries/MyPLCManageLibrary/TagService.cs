@@ -2,6 +2,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -131,32 +132,28 @@ namespace MyPLCManagerLibrary
 
             try
             {
-                bool ok = false;
-                if (tag.DataType == typeof(bool))
-                    ok = await _plcService.WriteAsync(tag.Address, (bool)value);
-                else if (tag.DataType == typeof(sbyte))
-                    ok = await _plcService.WriteAsync(tag.Address, (sbyte)value);
-                else if (tag.DataType == typeof(byte))
-                    ok = await _plcService.WriteAsync(tag.Address, (byte)value);
-                else if (tag.DataType == typeof(short))
+                // 关键修复：按「待写值自身的运行时类型」派发写入，而非依赖 tag.DataType。
+                // 同一 TagName 被多个控件（如可写的 PlcNumericInput 与只读的 PlcValueDisplay）注册时，
+                // 后注册者会因 ContainsTag 去重而沿用先注册者的类型（例如 float）。
+                // 若仍按 tag.DataType 做 (float)value 这类拆箱强转，而 value 实为 short，
+                // 会抛 InvalidCastException 导致写入失败。改为由调用方已解析好的值类型决定写入形态：
+                // 既消除异常，也保证写入宽度（short→ushort 写 DBW 字地址）与控件意图一致。
+                bool ok = value switch
                 {
-                    ushort toWrite = (ushort)(short)value;
-                    ok = await _plcService.WriteAsync(tag.Address, toWrite);
-                }
-                else if (tag.DataType == typeof(ushort))
-                    ok = await _plcService.WriteAsync(tag.Address, (ushort)value);
-                else if (tag.DataType == typeof(int))
-                    ok = await _plcService.WriteAsync(tag.Address, (int)value);
-                else if (tag.DataType == typeof(uint))
-                    ok = await _plcService.WriteAsync(tag.Address, (uint)value);
-                else if (tag.DataType == typeof(long))
-                    ok = await _plcService.WriteAsync(tag.Address, (long)value);
-                else if (tag.DataType == typeof(ulong))
-                    ok = await _plcService.WriteAsync(tag.Address, (ulong)value);
-                else if (tag.DataType == typeof(float))
-                    ok = await _plcService.WriteAsync(tag.Address, (float)value);
-                else if (tag.DataType == typeof(double))
-                    ok = await _plcService.WriteAsync(tag.Address, (double)value);
+                    bool b => await _plcService.WriteAsync(tag.Address, b),
+                    sbyte sb => await _plcService.WriteAsync(tag.Address, sb),
+                    byte by => await _plcService.WriteAsync(tag.Address, by),
+                    short s => await _plcService.WriteAsync(tag.Address, (ushort)s),
+                    ushort us => await _plcService.WriteAsync(tag.Address, us),
+                    int i => await _plcService.WriteAsync(tag.Address, i),
+                    uint ui => await _plcService.WriteAsync(tag.Address, ui),
+                    long l => await _plcService.WriteAsync(tag.Address, l),
+                    ulong ul => await _plcService.WriteAsync(tag.Address, ul),
+                    float f => await _plcService.WriteAsync(tag.Address, f),
+                    double d => await _plcService.WriteAsync(tag.Address, d),
+                    string str => await _plcService.WriteAsync(tag.Address, str),
+                    _ => await WriteViaTagTypeFallbackAsync(tag, value),
+                };
 
                 if (ok)
                 {
@@ -169,6 +166,40 @@ namespace MyPLCManagerLibrary
             catch (Exception ex)
             {
                 Debug.WriteLine($"WriteTagAsync 异常 - {tag?.Name}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 兜底：当待写值类型不在上述显式分支时（极少见），先按标签声明类型安全转换再写入，
+        /// 避免直接拆箱强转在类型不一致时抛异常。
+        /// </summary>
+        private async Task<bool> WriteViaTagTypeFallbackAsync(PLCTag tag, object? value)
+        {
+            if (value == null) return false;
+            try
+            {
+                var converted = Convert.ChangeType(value, tag.DataType, CultureInfo.InvariantCulture);
+                return await (tag.DataType switch
+                {
+                    Type t when t == typeof(bool) => _plcService.WriteAsync(tag.Address, (bool)converted),
+                    Type t when t == typeof(sbyte) => _plcService.WriteAsync(tag.Address, (sbyte)converted),
+                    Type t when t == typeof(byte) => _plcService.WriteAsync(tag.Address, (byte)converted),
+                    Type t when t == typeof(short) => _plcService.WriteAsync(tag.Address, (ushort)(short)converted),
+                    Type t when t == typeof(ushort) => _plcService.WriteAsync(tag.Address, (ushort)converted),
+                    Type t when t == typeof(int) => _plcService.WriteAsync(tag.Address, (int)converted),
+                    Type t when t == typeof(uint) => _plcService.WriteAsync(tag.Address, (uint)converted),
+                    Type t when t == typeof(long) => _plcService.WriteAsync(tag.Address, (long)converted),
+                    Type t when t == typeof(ulong) => _plcService.WriteAsync(tag.Address, (ulong)converted),
+                    Type t when t == typeof(float) => _plcService.WriteAsync(tag.Address, (float)converted),
+                    Type t when t == typeof(double) => _plcService.WriteAsync(tag.Address, (double)converted),
+                    Type t when t == typeof(string) => _plcService.WriteAsync(tag.Address, (string)converted),
+                    _ => Task.FromResult(false),
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"WriteViaTagTypeFallbackAsync 异常 - {tag?.Name}: {ex.Message}");
                 return false;
             }
         }

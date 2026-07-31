@@ -44,7 +44,7 @@ public class S7Communication : IPlcCommunication
             };
 
             Log($"正在连接 S7 TCP: {_config.IP}");
-            await Task.Run(() => newPlc.Open()).ConfigureAwait(false);
+            await Task.Run(() =>  newPlc.Open()).ConfigureAwait(false);
             _plc = newPlc;
             Log("连接成功");
             return true;
