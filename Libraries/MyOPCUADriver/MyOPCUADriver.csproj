@@ -9,7 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Opc.Ua.Client" Version="1.5.*" />
+    <!-- 钉死为稳定且普遍可用的版本；代码所用 API(Session/Subscription/MonitoredItem/NodeId/Variant)
+         在 1.4.x 与 1.5.x 完全一致。如确需 1.5 特性可改为 1.5.372.126 等具体版本。
+         注意：该包不在 VS 离线缓存，还原需能访问 nuget.org。 -->
+    <PackageReference Include="Opc.Ua.Client" Version="1.4.372.106" />
   </ItemGroup>
 
   <ItemGroup>
