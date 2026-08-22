@@ -1,9 +1,9 @@
 ﻿using MyPLCManagerLibrary;
 using MyPLCManagerLibrary.Interfaces;
 using MyPLCManagerLibrary.Model;
-using PLCTesting.Security.Models;
-using PLCTesting.Security.Services;
-using PLCTesting.Security.Views;
+using MySecurityLibrary.Models;
+using MySecurityLibrary.Services;
+using MySecurityLibrary.Views;
 using PLCTesting.Services;
 using PLCTesting.Views;
 using Prism.Commands;

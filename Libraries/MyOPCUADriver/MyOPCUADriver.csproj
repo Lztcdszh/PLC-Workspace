@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MyOPCUADriver</RootNamespace>
+    <AssemblyName>MyOPCUADriver</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Opc.Ua.Client" Version="1.5.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyPLCManageLibrary\MyPLCManagerLibrary.csproj" />
+  </ItemGroup>
+
+</Project>

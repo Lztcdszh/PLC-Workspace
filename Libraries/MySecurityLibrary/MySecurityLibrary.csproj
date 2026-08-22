@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>MySecurityLibrary</RootNamespace>
+    <AssemblyName>MySecurityLibrary</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Description>用户与权限管理库（含 WPF UI）：PBKDF2 密码哈希、SQLite 用户仓储、认证服务、角色权限，以及登录 / 用户管理界面。可供任意 .NET 8 WPF 项目复用。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <PackageReference Include="Prism.Core" Version="8.1.97" />
+  </ItemGroup>
+
+</Project>

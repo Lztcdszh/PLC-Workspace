@@ -23,7 +23,20 @@
     {
         S7,
         ModbusTcp,
-        ModbusRtu
+        ModbusRtu,
+        // OPC UA：工业事实标准，跨厂商互操作（P0 关键能力）
+        OpcUa
+    }
+
+    /// <summary>OPC UA 安全模式。</summary>
+    public enum OpcUaSecurityMode
+    {
+        /// <summary>无安全（仅测试/内网隔离环境）。</summary>
+        None,
+        /// <summary>签名（防篡改）。</summary>
+        Sign,
+        /// <summary>签名 + 加密。</summary>
+        SignAndEncrypt
     }
 
     // 新增：Modbus 子类型（TCP 或 RTU）
@@ -81,10 +94,27 @@
                     ProtocolType.S7 => $"{Protocol}_{IP}_{Rack}_{Slot}",
                     ProtocolType.ModbusTcp => $"{Protocol}_{IP}:{Port}",
                     ProtocolType.ModbusRtu => $"{Protocol}_{SerialPortName}_{BaudRate}",
+                    ProtocolType.OpcUa => $"{Protocol}_{EndpointUrl}",
                     _ => throw new NotSupportedException($"不支持的协议: {Protocol}")
                 };
             }
         }
         public byte SlaveId { get; set; } = 1;
+
+        // ========== OPC UA 相关属性（当 Protocol 为 OpcUa 时使用）==========
+        /// <summary>OPC UA 服务端端点 URL，例如 opc.tcp://192.168.1.10:4840</summary>
+        public string EndpointUrl { get; set; } = string.Empty;
+
+        /// <summary>OPC UA 安全模式，默认 None（内网隔离可先用，生产建议 SignAndEncrypt）。</summary>
+        public OpcUaSecurityMode OpcUaMode { get; set; } = OpcUaSecurityMode.None;
+
+        /// <summary>OPC UA 用户名（匿名时留空）。</summary>
+        public string OpcUaUser { get; set; } = string.Empty;
+
+        /// <summary>OPC UA 密码。</summary>
+        public string OpcUaPassword { get; set; } = string.Empty;
+
+        /// <summary>用于生成唯一连接键的连接字符串（OPC UA 用端点 URL）。</summary>
+        public string OpcUaConnectionKey => $"{Protocol}_{EndpointUrl}";
     }
 }

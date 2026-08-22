@@ -1,6 +1,7 @@
 ﻿using MyPLCManagerLibrary;
-using PLCTesting.Security.Services;
-using PLCTesting.Security.Views;
+using MyPLCFoundationLibrary.Logging;
+using MySecurityLibrary.Services;
+using MySecurityLibrary.Views;
 using PLCTesting.ViewModels;
 using PLCTesting.Views;
 using Prism.Ioc;
@@ -76,6 +77,23 @@ namespace PLCTesting
         protected override void OnInitialized()
         {
             base.OnInitialized();
+
+            // —— P0 结构化日志初始化（放在最早，确保登录/启动/退出全过程被记录）——
+            // 上位机属"服务式"运行，不输出控制台；按天滚动、保留 31 天。
+            StructuredLogger.Init(new LogConfig
+            {
+                AppName = "PLCTesting",
+                FileNamePrefix = "plctesting",
+                ConsoleEnabled = false,
+                MinLevel = AppLogLevel.Information,
+                RetainedFileCountLimit = 31
+            });
+            var lifecycle = StructuredLogger.Current.ForContext("Lifecycle");
+            lifecycle.Information(
+                "软件启动 StartTime={StartTime} Version={Version} Machine={Machine}",
+                DateTimeOffset.Now,
+                System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "?",
+                Environment.MachineName);
 
             _mainWindow = (MainWindow)Current.MainWindow;
             if (_mainWindow != null)
@@ -231,6 +249,26 @@ namespace PLCTesting
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // —— P0 结构化日志：记录软件关闭时间（覆盖正常退出/登录取消/托盘退出全部路径）——
+            try
+            {
+                var lifecycle = StructuredLogger.Current.ForContext("Lifecycle");
+                string user = "未登录/未知";
+                try
+                {
+                    var auth = Container.Resolve<IAuthService>();
+                    if (auth.CurrentUser != null) user = auth.CurrentUser.UserName;
+                }
+                catch { /* 取当前用户失败不影响关闭记录 */ }
+                lifecycle.Information(
+                    "软件关闭 ShutdownTime={ShutdownTime} ExitCode={ExitCode} User={User}",
+                    DateTimeOffset.Now, e.ApplicationExitCode, user);
+            }
+            catch { /* 日志写入失败不应阻塞退出 */ }
+
+            // 确保缓冲刷新到磁盘（文件 sink 同步写，这里再做一次兜底）
+            StructuredLogger.CloseAndFlush();
+
             _trayIcon?.Dispose();
             _trayIcon = null;
             base.OnExit(e);

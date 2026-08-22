@@ -10,11 +10,13 @@
   <ItemGroup>
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.7" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Libraries\MyPLCManageLibrary\MyPLCManagerLibrary.csproj" />
     <ProjectReference Include="..\..\Libraries\MyPLCUserControlLibrary\MyPLCUserControlLibrary.csproj" />
+    <ProjectReference Include="..\..\Libraries\MyPLCFoundationLibrary\MyPLCFoundationLibrary.csproj" />
+    <ProjectReference Include="..\..\Libraries\MySecurityLibrary\MySecurityLibrary.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Assets\tray.ico">
