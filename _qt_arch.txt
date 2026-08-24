@@ -1,0 +1,1 @@
+win64_llvm_mingw win64_mingw win64_msvc2019_64 win64_msvc2019_arm64

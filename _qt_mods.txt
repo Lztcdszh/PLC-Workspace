@@ -1,0 +1,10 @@
+aqt.exe : ERROR   : No modules available for this request.
+???? ?:1 ??: 420
++ ... ding ascii; & $aqt list-qt windows desktop --modules 6.7.3 win64_msvc ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ERROR   : No mo...r this request.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+==============================Suggested follow-up:==============================
+* Please use 'aqt list-qt windows desktop' to show versions of Qt available.
+* Please use 'aqt list-qt windows desktop --arch <QT_VERSION>' to list valid architectures.

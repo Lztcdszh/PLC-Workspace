@@ -1,0 +1,7 @@
+=== winget ===
+C:\Users\Administrator\AppData\Local\Microsoft\WindowsApps\winget.exe
+=== choco ===
+=== disk C: ===
+Used=179GB Free=59GB
+=== vswhere/msvc ===
+True

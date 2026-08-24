@@ -1,0 +1,20 @@
+Configuring QtPointCloudApp...
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- Could NOT find WrapVulkanHeaders (missing: Vulkan_INCLUDE_DIR) 
+-- Could NOT find WrapVulkanHeaders (missing: Vulkan_INCLUDE_DIR) 
+-- Configuring done (0.5s)
+-- Generating done (0.3s)
+-- Build files have been written to: C:/Users/Administrator/source/repos/QtPointCloudApp/build
+Building QtPointCloudApp (Release)...
+适用于 .NET Framework MSBuild 版本 17.14.23+b0019275e
+
+  1>Checking Build System
+  Automatic MOC and UIC for target QtPointCloudApp
+  Building Custom Rule C:/Users/Administrator/source/repos/QtPointCloudApp/CMakeLists.txt
+  MainWindow.cpp
+  CloudManager.cpp
+  PcdParser.cpp
+  正在生成代码...
+  QtPointCloudApp.vcxproj -> C:\Users\Administrator\source\repos\QtPointCloudApp\build\Release\QtPointCloudApp.exe
+  Building Custom Rule C:/Users/Administrator/source/repos/QtPointCloudApp/CMakeLists.txt
+APP_BUILD_DONE_EXIT 0
