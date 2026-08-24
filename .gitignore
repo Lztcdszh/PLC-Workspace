@@ -65,3 +65,29 @@ Archive/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# ============ Tidy: 非源码产物 / 临时文件 / 外部项目 ============
+# 运行时 DLL（VTK 等）由 NuGet 还原，不入库
+*.dll
+
+# 根目录零时脚本 / 日志 / 生成物
+_*
+mouse_jiggler*
+aqtinstall.log
+slide-outline.md
+PLCTestingSetup.wxs
+_disabled_ps_version/
+
+# 幻灯片 / 视频等生成产物
+_slide_assets/
+_slide_exports/
+generated-videos/
+__pycache__/
+
+# 截图与验证脚本目录（保留在磁盘，不进版本库）
+**/screenshots/
+
+# 外部 / 独立项目（留磁盘，不进本仓库；如需纳入请删除对应行）
+QtPointCloudApp/
+Docs/
+汇报材料*

@@ -1,9 +1,0 @@
-[1400x840] ScrollViewer Extent=733.0 Viewport=738.0 Scrollbar=NO
-[1400x840] PlcSelectButton count = 18
-Rendered main_bal_1400x840.png
-
-EXCEPTION: System.ArgumentNullException: Value cannot be null. (Parameter '“System.Windows.Controls.UIElementCollection”的子级不能为空。需要从 UIElement 派生的对象。')
-   at System.Windows.Controls.UIElementCollection.ValidateElement(UIElement element)
-   at System.Windows.Controls.UIElementCollection.AddInternal(UIElement element)
-   at TmpRender3.App.RenderAt(Window win, Double w, Double h, String pngName, String shotDir, StringBuilder log) in C:\Users\Administrator\source\repos\Apps\TmpRender3\App.xaml.cs:line 68
-   at TmpRender3.App.App_OnStartup(Object sender, StartupEventArgs e) in C:\Users\Administrator\source\repos\Apps\TmpRender3\App.xaml.cs:line 43
