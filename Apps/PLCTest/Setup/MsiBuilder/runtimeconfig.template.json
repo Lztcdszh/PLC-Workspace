@@ -1,0 +1,18 @@
+{
+  "runtimeOptions": {
+    "configProperties": {
+      "System.Drawing.Common.EnableUnixSupport": true
+    },
+    "assemblyBinding": {
+      "redirects": [
+        {
+          "culture": "neutral",
+          "name": "System.Drawing.Common",
+          "oldVersion": "0.0.0.0",
+          "newVersion": "8.0.0.0",
+          "publicKeyToken": "cc7b13ffcd2ddd51"
+        }
+      ]
+    }
+  }
+}
