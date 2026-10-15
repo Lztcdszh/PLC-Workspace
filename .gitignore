@@ -91,3 +91,19 @@ __pycache__/
 QtPointCloudApp/
 Docs/
 汇报材料*
+
+# ============ Node.js ============
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# MQTT 监视平台：运行时配置与自检临时文件
+Apps/MqttMonitor/config.json
+Apps/MqttMonitor/config.backup-*.json
+Apps/MqttMonitor/data/
+Apps/MqttMonitor/_*
+Apps/MqttMonitor/tools/_*
+
+# 嵌套独立仓库（有自己的远程，单独管理）
+Apps/MyModbusTool/
