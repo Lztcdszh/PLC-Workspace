@@ -104,6 +104,9 @@ Apps/MqttMonitor/config.backup-*.json
 Apps/MqttMonitor/data/
 Apps/MqttMonitor/_*
 Apps/MqttMonitor/tools/_*
+Apps/MqttMonitor/*.orig
+Apps/MqttMonitor/导出/
+Apps/MqttMonitor/预览-*.png
 
 # 嵌套独立仓库（有自己的远程，单独管理）
 Apps/MyModbusTool/

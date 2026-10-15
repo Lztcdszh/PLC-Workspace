@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MQTT 实时数据监视平台</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-dot" id="connDot"></span>
+    <span class="brand-name">MQTT 监视平台</span>
+    <span class="brand-sub" id="connText">未连接</span>
+  </div>
+
+  <div class="meta" id="statMeta">--</div>
+
+  <!-- 看板健康度汇总：只在"有卡片掉线、或有成员点位掉线"时出现，点一下跳到第一张出问题的卡片。
+       遵守"别堆面板"的约定，这里就是一行字，没问题时整条隐藏。 -->
+  <span class="stat-alert" id="statAlert" hidden></span>
+
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-icon" id="btnTheme" title="深色 / 浅色">🌙</button>
+    <button class="btn btn-ghost btn-icon" id="btnPause" title="暂停画面刷新（数据继续接收）">⏸</button>
+    <button class="btn btn-ghost btn-icon" id="btnReset" title="清空历史数据与统计">🗑</button>
+    <button class="btn btn-primary" id="btnConnectTop">连接</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ================= 左侧栏 ================= -->
+  <aside class="sidebar">
+
+    <!-- 实时主题：主面板，常驻 -->
+    <section class="panel panel-grow" data-name="topics" data-open="true">
+      <h3 class="panel-title" data-toggle>实时主题 <span class="badge" id="topicCount">0</span>
+        <span class="chev">▾</span>
+      </h3>
+      <div class="panel-body">
+        <input class="search" id="fTopicSearch" placeholder="搜索主题…" spellcheck="false">
+        <div class="topic-list" id="topicList">
+          <p class="empty">还没有收到任何消息</p>
+        </div>
+        <div class="panel-tools">
+          <label class="check" title="新主题出现时自动加到看板">
+            <input type="checkbox" id="fAutoAdd" checked><span>自动上板</span>
+          </label>
+          <label class="check" title="同一台设备的点位常发在不同主题上（plc/DB1.DBW290 电量、plc/DB1.DBW292 电流）。勾上后：同前缀的主题自动收进一张卡，每个主题一条曲线；已经有卡的分开卡片也会在下次刷新时并成一张。关掉就各占一张卡。"><input type="checkbox" id="fAutoGroup" checked><span>同前缀自动合并</span></label>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost btn-sm" id="btnSeedCards" title="按内置模拟器的测点定义生成带单位和上下限的卡片">示例看板</button>
+          <button class="btn btn-ghost btn-sm" id="btnClearCards" title="清空看板上的所有卡片">清空</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 内置 Broker：默认收起 -->
+    <section class="panel" data-name="broker" data-open="false">
+      <h3 class="panel-title" data-toggle>内置 Broker <span class="badge" id="brokerBadge">未运行</span>
+        <span class="chev">▾</span>
+      </h3>
+      <div class="panel-body">
+        <div class="field-row">
+          <div class="field field-port">
+            <label>端口</label>
+            <input id="fBrokerPort" type="number" value="1883">
+          </div>
+          <div class="field field-grow">
+            <label>账号（留空＝匿名）</label>
+            <input id="fBrokerUser" placeholder="匿名" spellcheck="false">
+          </div>
+          <div class="field field-grow">
+            <label>密码</label>
+            <input id="fBrokerPass" type="password" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnBrokerStart">启动</button>
+          <button class="btn btn-ghost" id="btnBrokerStop">停止</button>
+          <button class="btn btn-ghost" id="btnBrokerSelf">接入本地</button>
+        </div>
+
+        <div class="addr-box" id="brokerAddrBox" style="display:none">
+          <div class="addr-title">设备请连到</div>
+          <div class="addr-list" id="addrList"></div>
+        </div>
+
+        <div class="sub-head">
+          <span>已接入设备 <span class="badge" id="clientCount">0</span></span>
+          <label class="check" title="往 broker 注入演示数据，用于没接真实设备时试跑">
+            <input type="checkbox" id="fSim"><span>数据模拟器</span>
+          </label>
+        </div>
+        <div class="client-list" id="clientList">
+          <p class="empty">暂无设备接入</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 历史数据（落盘）：默认收起 -->
+    <section class="panel" data-name="history" data-open="false">
+      <h3 class="panel-title" data-toggle>历史数据 <span class="badge" id="histBadge">—</span>
+        <span class="chev">▾</span>
+      </h3>
+      <div class="panel-body">
+        <div class="field-row">
+          <div class="field field-port">
+            <label>保留天数</label>
+            <input id="fKeepDays" type="number" min="1" max="3650" value="7">
+          </div>
+          <div class="field field-grow">
+            <label>库文件</label>
+            <input id="fHistPath" readonly spellcheck="false" placeholder="—" title="历史数据库文件位置（可选中复制）">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnKeepDays">保存天数</button>
+          <button class="btn btn-ghost" id="btnHistExport" title="导出保留期内的历史数据（CSV，Excel 直接打开）">导出 CSV</button>
+          <button class="btn btn-ghost" id="btnHistClear" title="清空落盘的历史数据（看板卡片保留）">清空历史</button>
+        </div>
+        <p class="hint" id="histMeta">读取中…</p>
+      </div>
+    </section>
+
+    <!-- 连接设置（含订阅）：默认收起 -->
+    <section class="panel" data-name="connect" data-open="false">
+      <h3 class="panel-title" data-toggle>连接设置 <span class="chev">▾</span></h3>
+      <div class="panel-body">
+        <p class="hint">平台作为客户端去连别的 broker 时填这里；用内置 Broker 则不用管。</p>
+
+        <div class="field-row">
+          <div class="field field-grow">
+            <label>协议</label>
+            <select id="fProtocol">
+              <option value="mqtt">mqtt（TCP）</option>
+              <option value="mqtts">mqtts（TLS）</option>
+              <option value="ws">ws（WebSocket）</option>
+              <option value="wss">wss（WebSocket + TLS）</option>
+            </select>
+          </div>
+          <div class="field field-grow">
+            <label>地址</label>
+            <input id="fHost" placeholder="192.168.1.100" spellcheck="false">
+          </div>
+          <div class="field field-port">
+            <label>端口</label>
+            <input id="fPort" type="number" placeholder="1883" spellcheck="false">
+          </div>
+        </div>
+
+        <details class="adv">
+          <summary>账号与高级选项</summary>
+          <div class="field-row">
+            <div class="field field-grow">
+              <label>用户名</label>
+              <input id="fUser" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field field-grow">
+              <label>密码</label>
+              <input id="fPass" type="password" autocomplete="off">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field field-grow">
+              <label>Client ID（留空自动生成）</label>
+              <input id="fClientId" placeholder="自动生成" spellcheck="false">
+            </div>
+            <div class="field field-port">
+              <label>Keepalive</label>
+              <input id="fKeepalive" type="number" value="60">
+            </div>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="fSelfSigned"><span>允许自签证书</span>
+          </label>
+        </details>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnConnect">连接</button>
+          <button class="btn btn-ghost" id="btnDisconnect">断开</button>
+        </div>
+        <p class="hint" id="connHint"></p>
+
+        <div class="sub-head">
+          <span>已订阅 <span class="badge" id="subCount">0</span></span>
+          <input class="search search-sm" id="fAddSub" placeholder="新增订阅，如 plant/#" spellcheck="false">
+          <button class="btn btn-ghost btn-sm" id="btnAddSub">订阅</button>
+        </div>
+        <div class="chip-list" id="subList"></div>
+      </div>
+    </section>
+
+    <!-- 下发测试：默认收起 -->
+    <section class="panel" data-name="publish" data-open="false">
+      <h3 class="panel-title" data-toggle>下发测试 <span class="chev">▾</span></h3>
+      <div class="panel-body">
+        <div class="field">
+          <label>主题</label>
+          <input id="fPubTopic" placeholder="plant/line1/cmd" spellcheck="false">
+        </div>
+        <div class="field">
+          <label>载荷</label>
+          <input id="fPubPayload" placeholder="启动" spellcheck="false">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnPublish">发布</button>
+          <label class="check"><input type="checkbox" id="fPubRetain"><span>retain</span></label>
+        </div>
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- ================= 主区 ================= -->
+  <main class="main">
+
+    <div class="toolbar">
+      <span class="toolbar-title">实时看板</span>
+      <span class="toolbar-sub" id="cardCount"></span>
+      <div class="toolbar-right">
+        <span class="toolbar-label" title="曲线 X 轴显示多长一段时间（全局默认，单张卡片可单独覆盖）">X 轴</span>
+        <select id="fWindow" title="曲线 X 轴时间范围（全局默认；单张卡片可在 ⚙ 里单独覆盖）">
+          <option value="0">全部（保留期内）</option>
+          <option value="1">最近 1 分钟</option>
+          <option value="5">最近 5 分钟</option>
+          <option value="15">最近 15 分钟</option>
+          <option value="30">最近 30 分钟</option>
+          <option value="60">最近 1 小时</option>
+          <option value="240">最近 4 小时</option>
+          <option value="1440">最近 24 小时</option>
+          <option value="4320">最近 3 天</option>
+          <option value="10080">最近 7 天</option>
+        </select>
+        <select id="fCols" title="每行列数">
+          <option value="2">2 列</option>
+          <option value="3" selected>3 列</option>
+          <option value="4">4 列</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card-grid" id="cardGrid">
+      <div class="placeholder" id="cardPlaceholder">
+        <div class="ph-icon">📡</div>
+        <p>看板还是空的</p>
+        <p class="ph-sub">左侧「实时主题」里点 <b>+</b> 上板，或打开「自动上板」</p>
+      </div>
+    </div>
+
+    <div class="log-block" id="logBlock" data-open="false">
+      <div class="log-head" id="logToggle">
+        <span class="log-caret">▸</span>
+        <span class="toolbar-title">消息流水</span>
+        <span class="toolbar-sub" id="logCount">0 条</span>
+        <span class="spacer"></span>
+        <input class="search search-sm" id="fLogFilter" placeholder="按主题过滤…" spellcheck="false">
+        <button class="btn btn-ghost btn-sm" id="btnLogPause" title="暂停滚动（数据仍在接收）">⏸</button>
+        <button class="btn btn-ghost btn-sm" id="btnLogClear">清空</button>
+        <button class="btn btn-ghost btn-sm" id="btnLogExport">导出 CSV</button>
+      </div>
+      <div class="log-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th style="width:100px">时间</th>
+              <th style="width:30%">主题</th>
+              <th>载荷</th>
+              <th style="width:50px">QoS</th>
+              <th style="width:60px">字节</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- 卡片配置弹窗 -->
+<div class="modal-mask" id="cardModal">
+  <div class="modal">
+    <h3 id="modalTitle">测点设置</h3>
+    <div class="field">
+      <label>主题</label>
+      <input id="mTopic" spellcheck="false">
+      <label class="check check-tight" title="同一个 PLC 的点位常常分开发在不同主题上（plc/DB1.DBW290=电池电量、plc/DB1.DBW292=电池电流）。勾上之后这里填**主题前缀**（如 plc），前缀下的所有主题都进这一张卡，每个主题一条曲线">
+        <input type="checkbox" id="mGroup"><span>按前缀分组：这个前缀下的所有主题放进同一张卡（一台设备一张卡）</span>
+      </label>
+    </div>
+    <div class="field-row">
+      <div class="field field-grow">
+        <label>显示名称</label>
+        <input id="mName" placeholder="如：1号线 炉温" spellcheck="false">
+      </div>
+      <div class="field field-unit">
+        <label>单位</label>
+        <input id="mUnit" placeholder="℃" spellcheck="false">
+      </div>
+      <div class="field field-grow">
+        <label title="每条曲线最多画多少个点；留空 = 不限。曲线显示多久由下面的「X 轴时间范围」决定，这里只在设备上报很快时兜底（超出就均匀抽稀，不会丢掉前面的数据）">点数上限</label>
+        <input id="mPoints" type="number" min="0" placeholder="不限" title="每条曲线最多画多少个点，留空 = 不限">
+      </div>
+    </div>
+    <div class="field">
+      <label>展示曲线<span class="label-note" id="mPickNote">一个都不勾 = 自动。「测点」是同一个主题下不同 <b>tag / address</b> 的报文（比如小车状态、设定位置），勾哪个画哪个；「数值字段」是一条报文里含多个数值时按字段勾</span></label>
+      <div class="field-picker" id="mFieldPick"></div>
+      <div class="field-picker-foot">
+        <span id="mFieldHint">等待该主题的第一条报文…</span>
+        <button type="button" class="link-btn" id="mFieldClear">全部取消</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>测点字段
+        <span class="label-note">按报文里的哪个字段区分测点。留空 = 自动（依次找 tag → address → name → id）</span>
+      </label>
+      <input id="mGroupBy" placeholder="自动（tag / address）" spellcheck="false">
+    </div>
+    <div class="field">
+      <label>X 轴时间范围
+        <span class="label-note">只画这段时间内的数据。窗口以<b>该卡片最新一条数据的时间</b>为准，不是电脑当前时间 —— 设备停了、或刚刷新页面回填历史时，曲线不会整屏变空</span>
+      </label>
+      <select id="mWindow">
+        <option value="">跟随顶栏全局设置</option>
+        <option value="0">全部（保留期内）</option>
+        <option value="1">最近 1 分钟</option>
+        <option value="5">最近 5 分钟</option>
+        <option value="15">最近 15 分钟</option>
+        <option value="30">最近 30 分钟</option>
+        <option value="60">最近 1 小时</option>
+        <option value="240">最近 4 小时</option>
+        <option value="1440">最近 24 小时</option>
+        <option value="4320">最近 3 天</option>
+        <option value="10080">最近 7 天</option>
+      </select>
+      <p class="hint" id="mWindowNote">—</p>
+    </div>
+    <div class="field">
+      <label>额外字段路径（可选，多层用 data.temp，逗号分隔）</label>
+      <input id="mField" placeholder="留空即可" spellcheck="false">
+    </div>
+    <div class="field-row">
+      <div class="field field-grow">
+        <label>下限（低于则告警）</label>
+        <input id="mLow" type="number" placeholder="不限">
+      </div>
+      <div class="field field-grow">
+        <label>上限（高于则告警）</label>
+        <input id="mHigh" type="number" placeholder="不限">
+      </div>
+    </div>
+    <p class="hint">超出上下限卡片变红告警；进入限值内侧 10% 区间显示橙色预警。</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger-ghost" id="mDelete">删除此卡片</button>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost" id="mCancel">取消</button>
+      <button class="btn btn-primary" id="mSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 曲线悬停提示框：挂在 body 上（position:fixed）。
+     卡片是 overflow:hidden 且 :hover 时带 transform，放在卡片里会被裁掉、也会被卡片当参照定位。 -->
+<div class="card-tip" id="chartTip"></div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
