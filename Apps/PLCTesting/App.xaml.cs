@@ -53,6 +53,15 @@ namespace PLCTesting
         private MainWindow _mainWindow;
         private bool _forceClose;
 
+        /// <summary>
+        /// 本次是否以"后台方式"启动：不带主窗口、不弹登录框，只在托盘里安静运行。
+        /// 唯一判定来源：命令行带了 --background / --silent（开机自启动项固定带这个参数）。
+        /// 正常双击图标 / 开始菜单不带参数 → 一定走登录 + 显示主窗口。
+        /// （早期版本还看 appsettings.json 的 RunInBackground 勾选，实报反馈
+        ///  "正常打开也后台运行"后废除：手动打开就必须有界面，只有开机自启动才后台。）
+        /// </summary>
+        private bool _startHidden;
+
         protected override Window CreateShell()
         {
             return Container.Resolve<MainWindow>();
@@ -76,7 +85,15 @@ namespace PLCTesting
 
         protected override void OnInitialized()
         {
-            base.OnInitialized();
+            // ⚠️ 故意不调用 base.OnInitialized()：
+            // Prism 基类（PrismApplicationBase）的默认实现只有一句 `MainWindow?.Show()`——
+            // 它会在我们自己的窗口管控逻辑之前把 shell 直接显示出来。
+            // 正常模式下登录框是模态的、盖在主窗口上方，用户看不出主窗口已被提前显示；
+            // 但后台启动（--background 或勾选"后台运行"）会跳过登录流程直接 return，
+            // 主窗口便未经登录赤裸弹在桌面上——实报缺陷"只有登陆界面后台运行了，主界面还是打开"。
+            // 因此窗口显示时机完全由本方法自带逻辑控制：
+            //   登录成功后才 Show()；后台启动则始终不 Show()，只留托盘图标。
+            // （此前"未显示主窗口"的日志写在 base 调用之后，具有误导性，实际窗口早已被 base 弹出。）
 
             // —— P0 结构化日志初始化（放在最早，确保登录/启动/退出全过程被记录）——
             // 上位机属"服务式"运行，不输出控制台；按天滚动、保留 31 天。
@@ -101,8 +118,38 @@ namespace PLCTesting
                 _mainWindow.Closing += Main_Closing;
             }
 
+            // —— 启动方式判定（要在登录之前：后台启动不该弹登录框）——
+            // 只认命令行参数：开机自启动项固定带 --background（见 StartupService.Set），
+            // 正常双击图标不带参数 → 一定走登录 + 主窗口。
+            var settings = Services.AppSettingsStore.Default.Current;
+            _startHidden = Services.StartupService.HasBackgroundArgument(Environment.GetCommandLineArgs());
+
+            lifecycle.Information(
+                "启动方式 StartHidden={StartHidden} Reason={Reason} AutoStartOnBoot={AutoStartOnBoot}",
+                _startHidden,
+                _startHidden ? "命令行参数(--background)" : "正常启动",
+                settings.AutoStartOnBoot);
+
             // 首次运行写入默认管理员（admin / admin123）
             Container.Resolve<IUserStore>().EnsureSeeded();
+
+            if (_startHidden)
+            {
+                // —— 后台启动：跳过强制登录，直接进托盘 ——
+                // 登录改为"按需"：用户从托盘打开主窗口时才要求认证，
+                // 这样无人值守的开机自启动不会被登录框卡住。
+                //
+                // ⚠️ 必须改成"仅显式关闭"：主窗口从未 Show 过，
+                // Prism 默认的 OnLastWindowClose 会在"没有已打开窗口"时把进程直接退掉，
+                // 表现为"自启动后进程一闪就没了"。退出只走 ExitApp() 里的显式 Shutdown()。
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+                SetupTrayIcon();
+                lifecycle.Information("后台启动：已创建托盘图标，未显示主窗口");
+                ShowBalloon("PLCTesting 已在后台启动",
+                    "PLC 连接与 MQTT 发布正在运行。双击托盘图标可打开主窗口。");
+                return;
+            }
 
             // 强制登录循环：登录成功才进入主界面，否则退出程序
             if (!ShowLoginUntilAuthenticated())
@@ -138,7 +185,14 @@ namespace PLCTesting
             auth.Logout();
             _mainWindow?.Hide();
             if (!ShowLoginUntilAuthenticated())
+            {
                 ExitApp();
+                return;
+            }
+
+            // 重新登录成功：主窗口此前被 Hide 了，隐藏状态不会因登录成功而自动恢复，
+            // 必须显式重新显示并置前，否则用户会遇到"登录成功了但界面不出来"。
+            ShowMainWindow();
         }
 
         #region 窗口关闭 -> 缩到托盘
@@ -202,6 +256,21 @@ namespace PLCTesting
         private void ShowMainWindow()
         {
             if (_mainWindow == null) return;
+
+            // 后台启动时没有走过登录流程；首次打开主窗口必须先认证。
+            // 认证失败（用户在登录框上取消）→ 退回后台，保持托盘运行。
+            var auth = Container.Resolve<IAuthService>();
+            if (!auth.IsAuthenticated)
+            {
+                if (!ShowLoginUntilAuthenticated())
+                {
+                    ShowBalloon("未登录", "已取消登录，PLCTesting 继续在后台运行。");
+                    return;
+                }
+                if (_mainWindow.DataContext is MainWindowViewModel vmAfterLogin)
+                    vmAfterLogin.RequestLogout += OnRequestLogout;
+            }
+
             _mainWindow.Show();
             if (_mainWindow.WindowState == WindowState.Minimized)
                 _mainWindow.WindowState = WindowState.Normal;

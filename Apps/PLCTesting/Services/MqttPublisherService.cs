@@ -50,7 +50,31 @@ namespace PLCTesting.Services
         private string _lastError = "";
         private int _publishedCount;
 
+        // 定时发布：独立后台循环，随连接建立而启动、随断开/停止而取消
+        private CancellationTokenSource? _timerCts;
+        private Task? _timerTask;
+        private DateTime? _lastPublishTime;
+        private int _periodicRoundCount;
+
         public MqttConfig Config { get; set; } = new();
+
+        /// <summary>最近一次成功发布的时间（定时发布是否在跑，看这个即可）。</summary>
+        public DateTime? LastPublishTime
+        {
+            get => _lastPublishTime;
+            private set { _lastPublishTime = value; Raise(nameof(LastPublishTime)); Raise(nameof(LastPublishTimeText)); }
+        }
+
+        /// <summary>最近一次发布时间文本（供界面绑定）。</summary>
+        public string LastPublishTimeText =>
+            _lastPublishTime.HasValue ? _lastPublishTime.Value.ToString("HH:mm:ss") : "—";
+
+        /// <summary>已完成的定时发布轮次（每轮把全部启用点发布一遍）。</summary>
+        public int PeriodicRoundCount
+        {
+            get => _periodicRoundCount;
+            private set { if (_periodicRoundCount != value) { _periodicRoundCount = value; Raise(nameof(PeriodicRoundCount)); } }
+        }
 
         public bool IsRunning
         {
@@ -137,19 +161,24 @@ namespace PLCTesting.Services
             if (_isRunning) return;
             _stopRequested = false;
             _isRunning = true;
+            PeriodicRoundCount = 0;
             StatusText = Config.Enabled ? "正在连接 MQTT Broker…" : "已就绪（未启用）";
             if (Config.Enabled)
             {
                 _connection.TagValueChanged += OnTagValueChanged;
                 await ConnectWithRetryAsync();
+                // 正常由 OnMqttConnected 启动定时循环；这里兜底，防止事件已错过
+                if (_client.IsConnected)
+                    StartPeriodicLoop();
             }
         }
 
-        /// <summary>停止转发并断开 Broker 连接。</summary>
+        /// <summary>停止转发并断开 Broker 连接（同时停止定时发布循环）。</summary>
         public async Task StopAsync()
         {
             _stopRequested = true;
             _isRunning = false;
+            StopPeriodicLoop();
             _connection.TagValueChanged -= OnTagValueChanged;
             try
             {
@@ -218,12 +247,15 @@ namespace PLCTesting.Services
             StatusText = $"已连接 {Config.BrokerHost}:{Config.BrokerPort}";
             // 连接/重连后发布一次当前快照，确保订阅端拿到最新值
             _ = PublishAllSelectedAsync();
+            // 按配置启动定时发布循环（变化触发仍在 OnTagValueChanged 内独立生效）
+            StartPeriodicLoop();
             return Task.CompletedTask;
         }
 
         private Task OnMqttDisconnected(MqttClientDisconnectedEventArgs e)
         {
             IsConnected = false;
+            StopPeriodicLoop();
             if (_stopRequested)
             {
                 StatusText = "已停止";
@@ -256,6 +288,83 @@ namespace PLCTesting.Services
 
         #endregion
 
+        #region 定时发布
+
+        /// <summary>
+        /// 启动定时发布循环（按 Config.PublishIntervalMs 周期把全部启用点发布一遍）。
+        /// 幂等：重复调用会先取消上一个循环，避免出现多个定时器重复发送。
+        /// 仅当配置启用「定时发布」且当前已连接时才会真正运行。
+        /// </summary>
+        private void StartPeriodicLoop()
+        {
+            StopPeriodicLoop();
+
+            if (!_isRunning || !Config.Enabled || !Config.IsPeriodic || !_client.IsConnected)
+                return;
+
+            _timerCts = new CancellationTokenSource();
+            var token = _timerCts.Token;
+            var interval = Config.EffectiveIntervalMs;
+            PeriodicRoundCount = 0;
+            StatusText = $"已连接 {Config.BrokerHost}:{Config.BrokerPort}（每 {interval / 1000.0:0.##}s 定时发布）";
+            _timerTask = Task.Run(() => PeriodicLoopAsync(interval, token));
+        }
+
+        /// <summary>停止定时发布循环，等待其在途的一轮结束。</summary>
+        private void StopPeriodicLoop()
+        {
+            try { _timerCts?.Cancel(); } catch { /* 忽略 */ }
+            _timerCts?.Dispose();
+            _timerCts = null;
+            _timerTask = null;
+        }
+
+        private async Task PeriodicLoopAsync(int intervalMs, CancellationToken token)
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(intervalMs));
+            while (true)
+            {
+                try
+                {
+                    if (!await timer.WaitForNextTickAsync(token))
+                        break;
+
+                    // 未启用 / 未运行 / 连接掉了都不发，等下一拍
+                    if (!_isRunning || !Config.Enabled || !_client.IsConnected)
+                        continue;
+
+                    await PublishAllSelectedAsync();
+                    PeriodicRoundCount++;
+                }
+                catch (OperationCanceledException)
+                {
+                    // 正常取消（停止转发 / 配置热更新 / 程序退出）
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // 单拍失败只记错误、不退出循环。
+                    // 一个点坏了（地址非法/类型不匹配）不该让整个定时发布永久停摆。
+                    LastError = $"定时发布单次失败：{ex.Message}";
+                    Debug.WriteLine(LastError);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 立即手动发布一次全部启用点（不等定时周期）。供界面「立即发布」按钮与调试使用。
+        /// </summary>
+        /// <returns>本轮发布的点数；未连接返回 -1。</returns>
+        public async Task<int> PublishNowAsync()
+        {
+            if (!_client.IsConnected) return -1;
+            var n = await PublishAllSelectedAsync();
+            PeriodicRoundCount++;
+            return n;
+        }
+
+        #endregion
+
         #region 发布
 
         /// <summary>
@@ -273,6 +382,8 @@ namespace PLCTesting.Services
         private void OnTagValueChanged(object sender, TagService.TagChangedEventArgs e)
         {
             if (!_isRunning || !Config.Enabled || !IsConnected) return;
+            // 发布方式未启用「变化时发布」时，变化事件直接忽略（交由定时循环负责）
+            if (!Config.IsOnChange) return;
             // 只发布 dataPoints.json 中标记为 PublishMqtt 的数据点
             if (!_registry.ShouldPublish(e.TagName)) return;
             _ = PublishTagAsync(e.TagName, e.NewValue);
@@ -304,6 +415,7 @@ namespace PLCTesting.Services
                     .Build();
                 await _client.PublishAsync(msg, CancellationToken.None);
                 PublishedCount++;
+                LastPublishTime = DateTime.Now;
             }
             catch (Exception ex)
             {
@@ -312,16 +424,29 @@ namespace PLCTesting.Services
             }
         }
 
-        private async Task PublishAllSelectedAsync()
+        /// <summary>
+        /// 把当前所有「启用 MQTT 发布」的数据点各发布一次（读取标签当前缓存值，不依赖值是否变化）。
+        /// 连接建立后、以及定时循环的每一拍都会调用它。
+        /// </summary>
+        /// <returns>实际发布的点数。</returns>
+        private async Task<int> PublishAllSelectedAsync()
         {
-            if (!_isRunning || !Config.Enabled || !_client.IsConnected) return;
-            // 连接/重连后，按配置发布一次当前快照
-            foreach (var p in _registry.Points.Where(p => p.PublishMqtt))
+            if (!_isRunning || !Config.Enabled || !_client.IsConnected) return 0;
+            var count = 0;
+            // 用 ToList 快照，避免发布过程中配置被热更新导致集合被改
+            foreach (var p in _registry.Points.Where(p => p.PublishMqtt).ToList())
             {
+                if (!_client.IsConnected) break;
                 var tag = _connection.GetTag(p.Name);
                 if (tag != null)
+                {
                     await PublishTagAsync(tag.Name, tag.Value);
+                    count++;
+                }
             }
+            if (count > 0)
+                LastPublishTime = DateTime.Now;
+            return count;
         }
 
         /// <summary>
@@ -356,6 +481,7 @@ namespace PLCTesting.Services
                     .Build();
                 await _client.PublishAsync(msg, CancellationToken.None);
                 PublishedCount++;
+                LastPublishTime = DateTime.Now;
             }
             catch (Exception ex)
             {
@@ -423,6 +549,7 @@ namespace PLCTesting.Services
             if (_disposed) return;
             _disposed = true;
             _stopRequested = true;
+            StopPeriodicLoop();
             _connection.TagValueChanged -= OnTagValueChanged;
             try { _client.DisconnectAsync().GetAwaiter().GetResult(); } catch { /* 忽略 */ }
             _client?.Dispose();

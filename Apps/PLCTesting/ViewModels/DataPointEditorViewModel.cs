@@ -25,8 +25,14 @@ namespace PLCTesting.ViewModels
             WriteIndented = true
         };
 
-        /// <summary>可选的数据类型（与 DataPointRegistry.CreateTag 对齐）。</summary>
-        public IReadOnlyList<string> DataTypeOptions { get; } = new[]
+        /// <summary>
+        /// 可选的数据类型（与 DataPointRegistry.CreateTag 的 switch 对齐）。
+        /// 用 ObservableCollection 而不是只读数组：Load() 会把配置文件里出现的非标准写法
+        /// （如 "short" / "byte" / "uint16"，CreateTag 也认）补进来。
+        /// 否则 ComboBox 的 SelectedItem 因值不在 Items 里而被 WPF 置成 null，
+        /// 再经 TwoWay 写回就把用户原本正确的类型抹掉了。
+        /// </summary>
+        public ObservableCollection<string> DataTypeOptions { get; } = new()
         {
             "Bool", "Float", "Int", "Int16", "Word", "UInt8",
             "DWord", "Double", "String"
@@ -60,6 +66,12 @@ namespace PLCTesting.ViewModels
         /// <summary>请求关闭窗口；参数为 DialogResult。</summary>
         public event Action<bool>? RequestClose;
 
+        /// <summary>
+        /// 保存成功（文件已落盘）后触发。宿主据此热重载数据点注册表，
+        /// 免去"改完必须重启才生效"的问题。
+        /// </summary>
+        public event Action? Saved;
+
         private void Load()
         {
             Points.Clear();
@@ -72,7 +84,7 @@ namespace PLCTesting.ViewModels
                     if (list != null)
                     {
                         foreach (var p in list.Where(p => !string.IsNullOrWhiteSpace(p.Name)))
-                            Points.Add(p);
+                            AddPoint(p);
                         return;
                     }
                 }
@@ -84,13 +96,28 @@ namespace PLCTesting.ViewModels
             }
 
             // 无配置时给一个空行，方便直接上手
-            Points.Add(new DataPointConfig());
+            AddPoint(new DataPointConfig());
+        }
+
+        private void AddPoint(DataPointConfig p)
+        {
+            Points.Add(p);
+            EnsureTypeOption(p.DataType);
+        }
+
+        /// <summary>把非标准但 CreateTag 仍认的类型写法补进下拉选项，避免选中值被置空。</summary>
+        private void EnsureTypeOption(string dataType)
+        {
+            if (string.IsNullOrWhiteSpace(dataType)) return;
+            var t = dataType.Trim();
+            if (!DataTypeOptions.Any(o => string.Equals(o, t, StringComparison.OrdinalIgnoreCase)))
+                DataTypeOptions.Add(t);
         }
 
         private void ExecuteAdd()
         {
             var p = new DataPointConfig { Name = "新数据点", DataType = "Float" };
-            Points.Add(p);
+            AddPoint(p);
             Selected = p;
         }
 
@@ -115,6 +142,9 @@ namespace PLCTesting.ViewModels
             {
                 var json = JsonSerializer.Serialize(Points.ToList(), JsonOptions);
                 File.WriteAllText(ConfigPath, json);
+
+                // 先通知宿主热重载，再关窗（关窗后 VM 可能被回收）
+                Saved?.Invoke();
                 RequestClose?.Invoke(true);
             }
             catch (System.Exception ex)

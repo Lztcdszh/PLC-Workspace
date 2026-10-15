@@ -20,21 +20,36 @@ namespace PLCTesting.Services
         private static readonly string ConfigPath =
             Path.Combine(AppContext.BaseDirectory, "dataPoints.json");
 
-        private readonly List<DataPointConfig> _points = new();
-        private readonly Dictionary<string, DataPointConfig> _byName =
+        private List<DataPointConfig> _points = new();
+        private Dictionary<string, DataPointConfig> _byName =
             new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, DataPointConfig> _byAddress =
+        private Dictionary<string, DataPointConfig> _byAddress =
             new(StringComparer.OrdinalIgnoreCase);
 
         public IReadOnlyList<DataPointConfig> Points => _points;
 
         public DataPointRegistry()
         {
-            Load();
+            Reload();
         }
 
-        private void Load()
+        /// <summary>
+        /// 重新从磁盘加载数据点配置。
+        /// 数据点编辑器「保存」后必须调用它 —— 否则注册表里仍是启动时那一份，
+        /// 用户在界面上改的 PublishMqtt / LogToDb / 新增删除点都不会生效，直到重启软件。
+        /// <para>
+        /// 采用「写时复制」：在临时集合里装载完成后一次性替换引用。
+        /// 不能原地 Clear()+Add —— 后台定时发布线程可能正枚举旧集合，
+        /// 那会抛 "Collection was modified" 并让定时发布循环永久退出（静默失聪）。
+        /// </para>
+        /// </summary>
+        public void Reload()
         {
+            var points = new List<DataPointConfig>();
+            var byName = new Dictionary<string, DataPointConfig>(StringComparer.OrdinalIgnoreCase);
+            var byAddress = new Dictionary<string, DataPointConfig>(StringComparer.OrdinalIgnoreCase);
+
+            var ok = false;
             try
             {
                 if (File.Exists(ConfigPath))
@@ -44,8 +59,8 @@ namespace PLCTesting.Services
                     if (list != null)
                     {
                         foreach (var p in list.Where(p => !string.IsNullOrWhiteSpace(p.Name)))
-                            Add(p);
-                        return;
+                            Add(points, byName, byAddress, p);
+                        ok = true;
                     }
                 }
             }
@@ -55,19 +70,28 @@ namespace PLCTesting.Services
             }
 
             // 无配置或读取失败时，回退到默认两个点，保持原有行为
-            SeedDefaults();
+            if (!ok)
+                SeedDefaults(points, byName, byAddress);
+
+            // 原子替换（引用赋值，读者要么看到旧快照、要么看到新快照）
+            _points = points;
+            _byName = byName;
+            _byAddress = byAddress;
         }
 
-        private void SeedDefaults()
+        private static void SeedDefaults(
+            List<DataPointConfig> points,
+            Dictionary<string, DataPointConfig> byName,
+            Dictionary<string, DataPointConfig> byAddress)
         {
-            Add(new DataPointConfig
+            Add(points, byName, byAddress, new DataPointConfig
             {
                 Name = "DB1.DBW230",
                 Address = "DB1.DBW230",
                 DataType = "Int16",
                 Description = "小车状态"
             });
-            Add(new DataPointConfig
+            Add(points, byName, byAddress, new DataPointConfig
             {
                 Name = "DB1.DBB172",
                 Address = "DB1.DBB172",
@@ -76,26 +100,43 @@ namespace PLCTesting.Services
             });
         }
 
-        private void Add(DataPointConfig p)
+        private static void Add(
+            List<DataPointConfig> points,
+            Dictionary<string, DataPointConfig> byName,
+            Dictionary<string, DataPointConfig> byAddress,
+            DataPointConfig p)
         {
-            _points.Add(p);
-            _byName[p.Name] = p;
+            points.Add(p);
+            byName[p.Name] = p;
             if (!string.IsNullOrWhiteSpace(p.Address))
-                _byAddress[p.Address] = p;
+                byAddress[p.Address] = p;
         }
 
         /// <summary>把配置中的每个数据点注册为 PLC 标签并开始监控轮询。</summary>
         public void ApplyTo(IConnectionManager connection)
         {
             if (connection == null) return;
-            foreach (var p in _points)
+            var snapshot = _points;   // 取一次快照，避免循环中被 Reload 换掉
+            foreach (var p in snapshot)
             {
                 var tag = CreateTag(p);
-                if (tag != null)
+                if (tag == null) continue;
+                tag.IsMonitored = true;
+
+                // 同名标签已存在（例如配置改了之后重新 ApplyTo）→ 就地更新，不要重复 AddTag：
+                // TagService.AddTag 用 Tags.Contains 去重，而 PLCTag 没重写 Equals，
+                // 那是引用比较，重复注册会让同一点在集合里堆叠多份、重复轮询。
+                var existing = connection.GetTag(tag.Name);
+                if (existing != null)
                 {
-                    tag.IsMonitored = true;
-                    connection.AddTag(tag);
+                    existing.Address = tag.Address;
+                    existing.DataType = tag.DataType;
+                    existing.Description = tag.Description;
+                    existing.IsMonitored = true;
+                    continue;
                 }
+
+                connection.AddTag(tag);
             }
         }
 

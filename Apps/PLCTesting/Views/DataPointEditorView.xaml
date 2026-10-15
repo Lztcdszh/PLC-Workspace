@@ -19,7 +19,7 @@
     <DockPanel Margin="12">
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,8" TextWrapping="Wrap"
                    Foreground="#888" FontSize="12">
-            管理 dataPoints.json：决定哪些数据入库 / 发 MQTT。修改后点击"保存"，重启程序生效。
+            管理 dataPoints.json：决定哪些数据入库 / 发 MQTT。点击"保存"后立即生效，无需重启程序。
         </TextBlock>
 
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
@@ -35,14 +35,28 @@
                   AutoGenerateColumns="False" CanUserAddRows="False"
                   HeadersVisibility="Column" Height="300" Margin="0,0,0,10">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="名称" Width="120" Binding="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridTextColumn Header="PLC 地址" Width="120" Binding="{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridComboBoxColumn Header="类型" Width="90"
-                                        ItemsSource="{Binding DataTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        SelectedItemBinding="{Binding DataType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridTextColumn Header="描述" Width="160" Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridCheckBoxColumn Header="入库" Width="50" Binding="{Binding LogToDb, Mode=TwoWay}"/>
-                <DataGridCheckBoxColumn Header="发MQTT" Width="64" Binding="{Binding PublishMqtt, Mode=TwoWay}"/>
+                <DataGridTextColumn Header="名称" Width="130" Binding="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="PLC 地址" Width="130" Binding="{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <!-- ⚠️ 类型列必须用 DataGridTemplateColumn + ComboBox。
+                     不能用 DataGridComboBoxColumn：它继承自 DataGridColumn 而非 FrameworkElement，
+                     根本不在可视树里，ItemsSource 上的 RelativeSource AncestorType 解析不到，
+                     绑定静默失败成 null → 下拉框是空的、什么都选不了（实测 Items=0）。
+                     放进 CellTemplate 的 ComboBox 在可视树内，还能单击直接下拉，无需先双击进编辑态。 -->
+                <DataGridTemplateColumn Header="类型" Width="96">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox Margin="2,1" Padding="4,0" Height="22"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding DataContext.DataTypeOptions, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                      SelectedItem="{Binding DataType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="描述" Width="186" Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridCheckBoxColumn Header="入库" Width="56" Binding="{Binding LogToDb, Mode=TwoWay}"/>
+                <DataGridCheckBoxColumn Header="发MQTT" Width="72" Binding="{Binding PublishMqtt, Mode=TwoWay}"/>
             </DataGrid.Columns>
         </DataGrid>
 

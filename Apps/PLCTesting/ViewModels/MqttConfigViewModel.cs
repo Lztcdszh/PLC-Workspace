@@ -4,14 +4,16 @@ using PLCTesting.Services;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace PLCTesting.ViewModels
 {
     /// <summary>
-    /// MQTT 配置窗口视图模型（极简版）：编辑一份配置副本，保存时写回服务并持久化；
-    /// 提供测试连接、启动/停止转发。
+    /// MQTT 配置窗口视图模型：编辑一份配置副本，保存时写回服务并持久化；
+    /// 提供测试连接、启动/停止转发、立即发布一次。
+    /// 发布方式（变化时 / 定时）在界面上用两个勾选项表达，保存时组合为 MqttPublishMode。
     /// </summary>
     public class MqttConfigViewModel : BindableBase
     {
@@ -25,6 +27,67 @@ namespace PLCTesting.ViewModels
         }
 
         public MqttPublisherService Service => _service;
+
+        #region 发布方式（界面态）
+
+        private bool _publishOnChange;
+        /// <summary>变化时发布：标签值一变就发一帧。</summary>
+        public bool PublishOnChange
+        {
+            get => _publishOnChange;
+            set { if (SetProperty(ref _publishOnChange, value)) RaisePropertyChanged(nameof(ModeHint)); }
+        }
+
+        private bool _publishPeriodic;
+        /// <summary>定时发布：按固定周期把全部启用点重发一遍（值不变也发）。</summary>
+        public bool PublishPeriodic
+        {
+            get => _publishPeriodic;
+            set { if (SetProperty(ref _publishPeriodic, value)) RaisePropertyChanged(nameof(ModeHint)); }
+        }
+
+        private double _intervalSeconds = 1;
+        /// <summary>定时发布周期（秒），由 IntervalText 解析而来，已收敛到 0.2 ~ 3600。</summary>
+        public double IntervalSeconds => _intervalSeconds;
+
+        private string _intervalText = "1";
+        /// <summary>
+        /// 周期输入框文本。用字符串承接输入，避免用户删空/输一半时触发 WPF 数值转换错误红框；
+        /// 解析成功即更新 IntervalSeconds，解析失败保留上一次有效值。
+        /// </summary>
+        public string IntervalText
+        {
+            get => _intervalText;
+            set
+            {
+                if (!SetProperty(ref _intervalText, value)) return;
+                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var sec) ||
+                    double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out sec))
+                {
+                    _intervalSeconds = Math.Max(0.2, Math.Min(3600, sec));
+                }
+                RaisePropertyChanged(nameof(IntervalSeconds));
+                RaisePropertyChanged(nameof(ModeHint));
+            }
+        }
+
+        /// <summary>当前发布方式的自然语言描述，显示在配置窗口里。</summary>
+        public string ModeHint
+        {
+            get
+            {
+                var interval = Math.Max(0.2, Math.Min(3600, IntervalSeconds));
+                return (_publishOnChange, _publishPeriodic) switch
+                {
+                    (true, true) => $"值变化立即发，同时每 {interval:0.##} 秒把所有启用点重发一遍。",
+                    (true, false) => "仅在值发生变化时发布（值长期不变时监视端会看到旧的时间戳）。",
+                    (false, true) => $"仅按周期发布：每 {interval:0.##} 秒把所有启用点重发一遍。",
+                    _ => "⚠ 两种方式都未勾选，启动后不会发布任何数据。"
+                };
+            }
+        }
+
+        #endregion
 
         private string _testResult = "";
         public string TestResult
@@ -43,15 +106,25 @@ namespace PLCTesting.ViewModels
         public DelegateCommand SaveCommand { get; }
         public DelegateCommand TestCommand { get; }
         public DelegateCommand TogglePublishCommand { get; }
+        public DelegateCommand PublishNowCommand { get; }
 
         public MqttConfigViewModel(MqttPublisherService service, IConnectionManager connection)
         {
             _service = service;
             Config = Clone(service.Config);
 
+            // 把枚举拆成两个勾选项，便于勾「两者都要」
+            PublishOnChange = Config.IsOnChange;
+            PublishPeriodic = Config.IsPeriodic;
+            _intervalSeconds = Config.EffectiveIntervalMs / 1000.0;
+            _intervalText = _intervalSeconds.ToString("0.##", CultureInfo.InvariantCulture);
+
             SaveCommand = new DelegateCommand(async () => await ExecuteSaveAsync());
             TestCommand = new DelegateCommand(async () => await ExecuteTestAsync());
             TogglePublishCommand = new DelegateCommand(async () => await ExecuteTogglePublishAsync());
+            PublishNowCommand = new DelegateCommand(async () => await ExecutePublishNowAsync(),
+                () => _service.IsConnected)
+                .ObservesProperty(() => Service.IsConnected);
         }
 
         private async Task ExecuteSaveAsync()
@@ -59,6 +132,8 @@ namespace PLCTesting.ViewModels
             IsBusy = true;
             try
             {
+                ApplyUiStateToConfig();
+
                 // 覆盖服务配置并持久化
                 _service.Config = Clone(Config);
                 _service.SaveConfig();
@@ -84,6 +159,7 @@ namespace PLCTesting.ViewModels
             TestResult = "正在测试连接…";
             try
             {
+                ApplyUiStateToConfig();
                 var ok = await _service.TestConnectionAsync(Config);
                 TestResult = ok
                     ? "✅ 连接成功！Broker 可达。"
@@ -115,6 +191,41 @@ namespace PLCTesting.ViewModels
             }
         }
 
+        private async Task ExecutePublishNowAsync()
+        {
+            IsBusy = true;
+            try
+            {
+                var n = await _service.PublishNowAsync();
+                TestResult = n < 0
+                    ? "❌ 未连接 Broker，无法发布。"
+                    : $"📤 已立即发布 {n} 个数据点。";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        /// <summary>把界面上的发布方式/周期组合回 Config。</summary>
+        private void ApplyUiStateToConfig()
+        {
+            Config.PublishMode = (PublishOnChange, PublishPeriodic) switch
+            {
+                (true, true) => MqttPublishMode.OnChangeAndPeriodic,
+                (true, false) => MqttPublishMode.OnChange,
+                (false, true) => MqttPublishMode.Periodic,
+                _ => MqttPublishMode.OnChange  // 都没勾：退化为变化触发，服务端仍可识别
+            };
+
+            var seconds = Math.Max(0.2, Math.Min(3600, IntervalSeconds));
+            Config.PublishIntervalMs = (int)Math.Round(seconds * 1000);
+            // 回写纠正界面显示（例如用户输入了非法字符）
+            var normalized = seconds.ToString("0.##", CultureInfo.InvariantCulture);
+            if (IntervalText != normalized)
+                IntervalText = normalized;
+        }
+
         private static MqttConfig Clone(MqttConfig src)
         {
             return new MqttConfig
@@ -122,7 +233,9 @@ namespace PLCTesting.ViewModels
                 Enabled = src.Enabled,
                 BrokerHost = src.BrokerHost,
                 BrokerPort = src.BrokerPort,
-                BaseTopic = src.BaseTopic
+                BaseTopic = src.BaseTopic,
+                PublishMode = src.PublishMode,
+                PublishIntervalMs = src.PublishIntervalMs
             };
         }
     }

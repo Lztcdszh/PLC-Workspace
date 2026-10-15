@@ -169,6 +169,8 @@
                                 Background="#3BA55C" Command="{Binding OpenMqttConfigCommand}" Margin="0,0,8,0" />
                         <Button Content="🗂️ 数据点" Style="{StaticResource TechToolButton}"
                                 Background="#8E7CC3" Command="{Binding OpenDataPointEditorCommand}" Margin="0,0,8,0" />
+                        <Button Content="🖥️ 系统设置" Style="{StaticResource TechToolButton}"
+                                Background="#5C7A99" Command="{Binding OpenSystemSettingsCommand}" Margin="0,0,8,0" />
                         <!-- 用户管理：仅管理员可见 -->
                         <Button Content="👤 用户管理"
                                 Background="#9B59B6" Command="{Binding OpenUserManagementCommand}" Margin="0,0,8,0">

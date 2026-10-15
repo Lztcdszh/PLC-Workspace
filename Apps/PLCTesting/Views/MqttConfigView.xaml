@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PLCTesting.Views"
         Title="MQTT 转发配置"
-        Width="460"
-        Height="430"
-        MinHeight="380"
+        Width="470"
+        Height="620"
+        MinHeight="580"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         FontFamily="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif"
@@ -34,6 +34,37 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Padding" Value="14,6" />
             <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!-- 小号动作按钮：自绘模板，避免系统主题把禁用态刷成白底白字（"立即发布一次" 曾不可见） -->
+        <Style x:Key="MiniActionButton" TargetType="Button">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#67C23A" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="3"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#7FD04A" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="#DCE6D6" />
+                                <Setter Property="Foreground" Value="#93A38B" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style TargetType="Label">
@@ -79,6 +110,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Ellipse Grid.Row="0" Grid.Column="0" Width="12" Height="12" Margin="0,0,8,0"
@@ -96,11 +128,26 @@
                             <Run Text="已发布消息：" />
                             <Run Text="{Binding Service.PublishedCount, Mode=OneWay}" FontWeight="Bold" />
                         </TextBlock>
-                        <CheckBox Content="启用 MQTT 转发" Margin="20,0,0,0" FontSize="11"
-                                  IsChecked="{Binding Config.Enabled}" />
+                        <TextBlock FontSize="11" Foreground="#666" Margin="14,0,0,0">
+                            <Run Text="定时轮次：" />
+                            <Run Text="{Binding Service.PeriodicRoundCount, Mode=OneWay}" FontWeight="Bold" />
+                        </TextBlock>
+                        <TextBlock FontSize="11" Foreground="#666" Margin="14,0,0,0">
+                            <Run Text="最近发布：" />
+                            <Run Text="{Binding Service.LastPublishTimeText, Mode=OneWay}" FontWeight="Bold" />
+                        </TextBlock>
                     </StackPanel>
 
-                    <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                    <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,6,0,0">
+                        <CheckBox Content="启用 MQTT 转发" FontSize="11" VerticalAlignment="Center"
+                                  IsChecked="{Binding Config.Enabled}" />
+                        <Button Content="📤 立即发布一次" Margin="14,0,0,0"
+                                Style="{StaticResource MiniActionButton}"
+                                Command="{Binding PublishNowCommand}"
+                                IsEnabled="{Binding Service.IsConnected, Mode=OneWay}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
                                FontSize="10" Foreground="#E6A23C" TextWrapping="Wrap"
                                Text="{Binding Service.LastError, Mode=OneWay}" />
                 </Grid>
@@ -136,8 +183,30 @@
                 </Grid>
             </Border>
 
+            <!-- 发布方式 -->
+            <TextBlock Text="⏱ 发布方式" Style="{StaticResource GroupTitle}" Margin="0,10,0,6" />
+            <Border Background="White" CornerRadius="6" Padding="12">
+                <StackPanel>
+                    <CheckBox FontSize="11" Content="变化时发布 —— 标签值一变就发一帧"
+                              IsChecked="{Binding PublishOnChange}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox FontSize="11" VerticalAlignment="Center"
+                                  Content="定时发布 —— 按周期把全部启用点重发一遍"
+                                  IsChecked="{Binding PublishPeriodic}" />
+                        <TextBox Width="58" Margin="12,0,4,0" TextAlignment="Right" Padding="4,2"
+                                 Text="{Binding IntervalText, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="秒 / 次" FontSize="11" VerticalAlignment="Center" Foreground="#666" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0,8,0,0" FontSize="10" Foreground="#909399" TextWrapping="Wrap"
+                               Text="{Binding ModeHint}" />
+                </StackPanel>
+            </Border>
+
             <TextBlock Margin="0,10,0,0" FontSize="10" Foreground="#999" TextWrapping="Wrap">
-                连接即自动转发全部已注册标签（值变化即发布，QoS 1）。主题格式：&lt;前缀&gt;/&lt;PLC地址&gt;。
+                转发 dataPoints.json 中「启用 MQTT 发布」的点，QoS 1。主题格式：&lt;前缀&gt;/&lt;PLC地址&gt;。
+                周期最小 0.2 秒、最大 3600 秒。
             </TextBlock>
         </StackPanel>
 

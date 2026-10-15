@@ -39,6 +39,7 @@ namespace PLCTesting.ViewModels
         public DelegateCommand OpenMqttConfigCommand { get; private set; }
         public DelegateCommand OpenDataPointEditorCommand { get; private set; }
         public DelegateCommand OpenUserManagementCommand { get; private set; }
+        public DelegateCommand OpenSystemSettingsCommand { get; private set; }
         public DelegateCommand LogoutCommand { get; private set; }
 
         /// <summary>请求退出登录（由 App 处理：隐藏主窗口并重新弹登录框）。</summary>
@@ -52,6 +53,12 @@ namespace PLCTesting.ViewModels
 
         /// <summary>当前用户角色的中文显示名。</summary>
         public string CurrentUserRoleText => _auth.CurrentUser?.Role.DisplayName() ?? "";
+
+        /// <summary>
+        /// 数据点注册表。提升为字段是为了让「数据点编辑器」保存后能热重载它 ——
+        /// 否则注册表停留在启动那一刻的快照，用户改的 PublishMqtt / LogToDb / 新增删除点都要重启软件才生效。
+        /// </summary>
+        public DataPointRegistry DataPoints { get; }
 
         /// <summary>MQTT 发布服务（配置窗口与之共享同一实例，保存即热更新）。</summary>
         public MqttPublisherService MqttService { get; }
@@ -90,8 +97,8 @@ namespace PLCTesting.ViewModels
             Connection = PLCConnection.GetOrCreate(plcConfig);
 
             // 数据点注册表：从 dataPoints.json 读取要记录/发布的数据点，并注册为 PLC 标签
-            var dataPointRegistry = new DataPointRegistry();
-            dataPointRegistry.ApplyTo(Connection);
+            DataPoints = new DataPointRegistry();
+            DataPoints.ApplyTo(Connection);
 
             // 注册标签（假设复位位地址为 DB1.DBX10.0）
             var resetTag = PLCTag.CreateBool("参数复位", "DB1.DBX50.0", "参数复位脉冲位");
@@ -99,17 +106,17 @@ namespace PLCTesting.ViewModels
 
             // 初始化 SQLite 日志仓储与变化记录器
             ChangeLogRepository = new ChangeLogRepository(ChangeLogRepository.DefaultDbPath);
-            _changeLogger = new PlcChangeLogger(Connection, ChangeLogRepository, dataPointRegistry);
+            _changeLogger = new PlcChangeLogger(Connection, ChangeLogRepository, DataPoints);
 
             // 初始化 MQTT 发布服务：若配置为启用，则开机自动连接并转发
-            MqttService = new MqttPublisherService(Connection, dataPointRegistry);
+            MqttService = new MqttPublisherService(Connection, DataPoints);
             if (MqttService.Config.Enabled)
             {
                 _ = MqttService.StartAsync();
             }
 
             // 数据接入服务：封装"任意数据"入口，通过抽象接口分别写库 / 发 MQTT（两者解耦、可独立缺失）
-            DataIngestion = new DataIngestionService(dataPointRegistry, ChangeLogRepository, MqttService);
+            DataIngestion = new DataIngestionService(DataPoints, ChangeLogRepository, MqttService);
             DataIngestionService.Current = DataIngestion;
 
             ResetParametersCommand = new DelegateCommand(ExecuteResetParameters);
@@ -118,6 +125,7 @@ namespace PLCTesting.ViewModels
             OpenMqttConfigCommand = new DelegateCommand(ExecuteOpenMqttConfig);
             OpenDataPointEditorCommand = new DelegateCommand(ExecuteOpenDataPointEditor);
             OpenUserManagementCommand = new DelegateCommand(ExecuteOpenUserManagement);
+            OpenSystemSettingsCommand = new DelegateCommand(ExecuteOpenSystemSettings);
             LogoutCommand = new DelegateCommand(() => RequestLogout?.Invoke());
 
             // 程序退出时断开 MQTT 连接，避免句柄泄漏
@@ -153,13 +161,32 @@ namespace PLCTesting.ViewModels
             window.Show();
         }
 
-        private void ExecuteOpenDataPointEditor()
+        private void ExecuteOpenSystemSettings()
         {
-            var window = new DataPointEditorView
+            var window = new SystemSettingsView
             {
                 Owner = Application.Current?.MainWindow
             };
             window.ShowDialog();
+        }
+
+        private void ExecuteOpenDataPointEditor()
+        {
+            var window = new DataPointEditorView(OnDataPointsSaved)
+            {
+                Owner = Application.Current?.MainWindow
+            };
+            window.ShowDialog();
+        }
+
+        /// <summary>
+        /// 数据点编辑器保存后的热重载：重新读盘并重新注册 PLC 标签，
+        /// 让新的 PublishMqtt / LogToDb 开关、新增或删除的点立即生效（无需重启软件）。
+        /// </summary>
+        private void OnDataPointsSaved()
+        {
+            DataPoints.Reload();
+            DataPoints.ApplyTo(Connection);
         }
 
         private void ExecuteOpenLogQuery()

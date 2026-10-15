@@ -88,7 +88,7 @@
 
                         <!-- 分组二：位置限位 -->
                         <TextBlock Text="📍 位置限位" Style="{StaticResource GroupTitle}" />
-                        <Grid>
+                        <Grid Height="96">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
@@ -106,7 +106,28 @@
                                                    DataType="Int16" FormatString="F0" />
                             <myplc:PlcNumericInput Grid.Row="1" Grid.Column="1" Label="故障时间设定" TagName="故障时间设定" TagAddress="DB1.DBW173"
                            DataType="Int16" FormatString="F0" Unit="100ms" />
+                            
+
                         </Grid>
+                        <!-- 分组三：位置限位 -->
+                        <TextBlock Text="📍 保护参数" Style="{StaticResource GroupTitle}" />
+                        <Grid Height="220">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <myplc:PlcNumericInput Grid.Row="0" Grid.Column="0" Margin="3,0,0,2" Label="低电量阈值" TagName="低电量阈值" TagAddress="DB1.DBW177"
+                            DataType="Int16" FormatString="F0" Unit="%%%" />
+                          
+
+
+                        </Grid>
+
                     </StackPanel>
                 </ScrollViewer>
             </myplc:PlcPanel.PanelContent>
