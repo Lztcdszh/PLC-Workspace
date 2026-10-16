@@ -13,4 +13,10 @@
     <PackageReference Include="S7netplus" Version="0.20.0" />
   </ItemGroup>
 
+  <!-- 结构化日志：监控循环是"静默死亡"风险最高的一环，必须能落到现场日志文件，
+       不能再依赖 Release 下会被编译掉的 Debug.WriteLine。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\MyPLCFoundationLibrary\MyPLCFoundationLibrary.csproj" />
+  </ItemGroup>
+
 </Project>

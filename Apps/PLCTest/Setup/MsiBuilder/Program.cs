@@ -34,7 +34,7 @@ namespace MsiBuilder
         private const string ShortcutName = "PLC测试台";
         private const string OutFileName = "PLCTestingSetup";   // 不要带 .msi，WixSharp 会自己加
 
-        private const string ProductVersion = "1.1.4";
+        private const string ProductVersion = "1.1.5";
 
         /// <summary>
         /// 用户数据 / 现场配置文件：**不纳入 MSI 组件清单**。

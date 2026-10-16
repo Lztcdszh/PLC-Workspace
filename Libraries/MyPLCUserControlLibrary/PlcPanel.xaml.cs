@@ -69,15 +69,31 @@ namespace MyPLCUserControlLibrary
             PropagateConnection();
         }
 
-        /// <summary>将本容器的 Connection 下发给内部尚未显式设置连接的 PLC 子控件。</summary>
+        /// <summary>
+        /// 将本容器的 Connection 下发给内部尚未取得有效连接的 PLC 子控件。
+        /// </summary>
+        /// <remarks>
+        /// ⚠️ 判定条件必须是「子控件当前 <b>有效</b> 连接为空」，而不是「本地值未设置」。
+        /// 原因（现场缺陷复盘）：子控件若显式写了
+        /// <c>Connection="{Binding RelativeSource={RelativeSource AncestorType=myplc:PlcPanel}, Path=Connection}"</c>，
+        /// 该绑定表达式会作为本地值存在，<see cref="DependencyObject.ReadLocalValue"/> 返回的是
+        /// BindingExpression 而**不是** <see cref="DependencyProperty.UnsetValue"/>，于是被旧判断当成
+        /// "已显式设置连接"而跳过下发。偏偏这类祖先绑定在「窗口已构造但尚未 Show」（开机自启动
+        /// --background 进托盘、稍后才从托盘打开主窗口）时没有可视化树可走，解析结果为 null，
+        /// 且显示之后不会再自愈 —— 结果这些子控件永远拿不到连接：不订阅标签、不响应写入。
+        /// 实报症状即为此：模式设定四个 PlcSelectButton 点击无效/不高亮 + 16 根导轨条不闪烁。
+        /// 改为按有效值判断后，下发会把这些"绑了个空"的控件就地补上连接（SetValue 会顺带清掉
+        /// 那个坏绑定），而真正显式绑定了**有效**连接的子控件（如接了另一个 IConnectionManager）
+        /// 仍然被尊重、不会被覆盖。
+        /// </remarks>
         private void PropagateConnection()
         {
             if (PanelContent == null) return;
             IConnectionManager? conn = ConnectionManager;
+            if (conn == null) return;   // 本面板自身还没连上：不下发（避免把子控件写成本地面板空值）
             foreach (var child in FindVisualChildren<PlcControlBase>(PanelContent))
             {
-                // 仅下发未显式（本地）设置连接的子控件，尊重子控件的独立绑定
-                if (child.ReadLocalValue(ConnectionProperty) == DependencyProperty.UnsetValue)
+                if (child.Connection == null)
                     child.Connection = conn;
             }
         }
