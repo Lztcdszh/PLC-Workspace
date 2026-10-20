@@ -4,11 +4,13 @@ using MySecurityLibrary.Services;
 using MySecurityLibrary.Views;
 using PLCTesting.ViewModels;
 using PLCTesting.Views;
+using PLCTesting.Services;
 using Prism.Ioc;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 
@@ -152,6 +154,9 @@ namespace PLCTesting
             // 首次运行写入默认管理员（admin / admin123）
             Container.Resolve<IUserStore>().EnsureSeeded();
 
+            // 自动更新：启动后延迟检查 + 事件挂接（后台托盘弹气泡，前台主窗口显示"有新版本"角标）
+            SetupUpdateCheck();
+
             if (_startHidden)
             {
                 // —— 后台启动：跳过强制登录，直接进托盘 ——
@@ -184,6 +189,92 @@ namespace PLCTesting
             SetupTrayIcon();
             _mainWindow.Show();
         }
+
+        #region 自动更新
+
+        /// <summary>
+        /// 挂接自动更新：启动 20 秒后查一次（避开 PLC 连接/登录抢网），之后每 6 小时一次。
+        /// 检查失败只写日志，绝不弹错误框打扰现场运行。
+        /// </summary>
+        private void SetupUpdateCheck()
+        {
+            try
+            {
+                var update = UpdateService.Default;
+                update.UpdateFound += OnUpdateFound;
+                update.ExitRequested += OnUpdateExitRequested;
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(20));
+                        await update.CheckAsync(false);
+                        while (true)
+                        {
+                            await Task.Delay(TimeSpan.FromHours(6));
+                            await update.CheckAsync(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        StructuredLogger.Current.ForContext("Update").Warning(ex, "自动更新后台检查异常");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                StructuredLogger.Current.ForContext("Update").Warning(ex, "初始化自动更新失败");
+            }
+        }
+
+        private void OnUpdateFound(Version version)
+        {
+            ShowBalloon("发现新版本 v" + version,
+                "点击托盘「检查更新」，或在主窗口「系统设置 → 自动更新」里安装。");
+        }
+
+        /// <summary>
+        /// 安装前请求退出：必须绕过"关闭窗口→缩到托盘/确认退出"的逻辑，
+        /// 否则引导脚本永远等不到进程退出，安装不会开始。
+        /// </summary>
+        private void OnUpdateExitRequested()
+        {
+            try
+            {
+                _forceClose = true;
+                _trayIcon?.Dispose();
+                _trayIcon = null;
+                Dispatcher.Invoke(() => Current.Shutdown());
+            }
+            catch
+            {
+                Environment.Exit(0);
+            }
+        }
+
+        /// <summary>托盘菜单「检查更新」：立即检查并回报结果；有包就打开系统设置让人安装。</summary>
+        private async void OnTrayCheckUpdate()
+        {
+            var update = UpdateService.Default;
+            try
+            {
+                await update.CheckAsync(true);
+                ShowBalloon("更新检查", update.StatusText);
+                if (update.CanInstall && !update.IsAuto)
+                {
+                    ShowMainWindow();
+                    if (_mainWindow?.DataContext is MainWindowViewModel vm)
+                        vm.OpenSystemSettingsCommand.Execute();
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowBalloon("更新检查失败", ex.Message);
+            }
+        }
+
+        #endregion
 
         /// <summary>循环显示登录框，直到认证成功；用户取消/关闭则返回 false（退出程序）。</summary>
         private bool ShowLoginUntilAuthenticated()
@@ -258,12 +349,15 @@ namespace PLCTesting
             itemShow.Click += (s, e) => ShowMainWindow();
             var itemMqtt = new ToolStripMenuItem("MQTT 配置");
             itemMqtt.Click += (s, e) => OpenMqttConfig();
+            var itemUpdate = new ToolStripMenuItem("检查更新");
+            itemUpdate.Click += (s, e) => OnTrayCheckUpdate();
             var itemLogout = new ToolStripMenuItem("退出登录");
             itemLogout.Click += (s, e) => OnRequestLogout();
             var itemExit = new ToolStripMenuItem("退出");
             itemExit.Click += (s, e) => ExitApp();
             menu.Items.Add(itemShow);
             menu.Items.Add(itemMqtt);
+            menu.Items.Add(itemUpdate);
             menu.Items.Add(itemLogout);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(itemExit);

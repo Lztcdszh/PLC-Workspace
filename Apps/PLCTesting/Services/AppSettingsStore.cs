@@ -18,7 +18,9 @@ namespace PLCTesting.Services
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
-            WriteIndented = true
+            WriteIndented = true,
+            // 枚举写成字符串（"Prompt"/"Auto"），文件可读、也不会因枚举顺序变化而错位
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
         };
 
         private AppSettings _current = new();
@@ -84,12 +86,19 @@ namespace PLCTesting.Services
         }
 
         /// <summary>用界面上的值更新内存（不落盘）。</summary>
+        /// <remarks>
+        /// ⚠️ 这里必须把 <see cref="AppSettings"/> 的**每一个字段**都搬过来。
+        /// 早期只搬了 AutoStartOnBoot，新增字段会在"保存系统设置"时被静默清空
+        /// （表现：刚设好的更新策略，点一次保存就变回默认值）。
+        /// </remarks>
         public void Update(AppSettings settings)
         {
             if (settings == null) return;
             Current = new AppSettings
             {
-                AutoStartOnBoot = settings.AutoStartOnBoot
+                AutoStartOnBoot = settings.AutoStartOnBoot,
+                UpdateMode = settings.UpdateMode,
+                SkippedVersion = settings.SkippedVersion ?? ""
             };
         }
     }

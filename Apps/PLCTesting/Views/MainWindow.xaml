@@ -23,6 +23,7 @@
         </LinearGradientBrush>
     </Window.Background>
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <!-- ============ 科技风调色 ============ -->
         <Color x:Key="TechCyan">#00E5FF</Color>
         <Color x:Key="TechBlue">#409EFF</Color>
@@ -171,6 +172,13 @@
                                 Background="#8E7CC3" Command="{Binding OpenDataPointEditorCommand}" Margin="0,0,8,0" />
                         <Button Content="🖥️ 系统设置" Style="{StaticResource TechToolButton}"
                                 Background="#5C7A99" Command="{Binding OpenSystemSettingsCommand}" Margin="0,0,8,0" />
+                        <!-- 有新版本时才出现的提示角标：点它打开系统设置去安装 -->
+                        <Button Content="{Binding Update.LatestVersionText, StringFormat='🆕 有新版本 {0}'}"
+                                Style="{StaticResource TechToolButton}"
+                                Background="#E6A23C" Foreground="White"
+                                Command="{Binding OpenSystemSettingsCommand}" Margin="0,0,8,0"
+                                Visibility="{Binding Update.IsUpdateAvailable, Converter={StaticResource BoolToVis}}"
+                                ToolTip="发现新版本，点击打开系统设置进行安装" />
                         <!-- 用户管理：仅管理员可见 -->
                         <Button Content="👤 用户管理"
                                 Background="#9B59B6" Command="{Binding OpenUserManagementCommand}" Margin="0,0,8,0">

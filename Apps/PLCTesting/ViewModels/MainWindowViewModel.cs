@@ -63,6 +63,9 @@ namespace PLCTesting.ViewModels
         /// <summary>MQTT 发布服务（配置窗口与之共享同一实例，保存即热更新）。</summary>
         public MqttPublisherService MqttService { get; }
 
+        /// <summary>自动更新服务（主窗口只用来显示"有新版本"角标，安装动作在系统设置里）。</summary>
+        public UpdateService Update { get; } = UpdateService.Default;
+
         /// <summary>变化日志仓储（供日志记录器和查询窗口共享）。</summary>
         public ChangeLogRepository ChangeLogRepository { get; }
 

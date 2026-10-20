@@ -22,12 +22,41 @@ namespace PLCTesting.ViewModels
         private readonly AppSettingsStore _store;
         private readonly StartupService _startup;
 
+        /// <summary>自动更新服务（界面直接绑定 Update.* 用它的状态与命令）。</summary>
+        public UpdateService Update { get; }
+
         private bool _autoStartOnBoot;
         /// <summary>开机自启动（写入当前用户 HKCU Run 项，带 --background 参数）。</summary>
         public bool AutoStartOnBoot
         {
             get => _autoStartOnBoot;
             set => SetProperty(ref _autoStartOnBoot, value);
+        }
+
+        /// <summary>是否启用自动检测更新（关闭 = 永不联网检查）。</summary>
+        public bool UpdateCheckEnabled
+        {
+            get => Update.Mode != UpdateMode.Off;
+            set
+            {
+                Update.Mode = value
+                    ? (Update.IsAuto ? UpdateMode.Auto : UpdateMode.Prompt)
+                    : UpdateMode.Off;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(UpdateAutoInstall));
+            }
+        }
+
+        /// <summary>检测到新版本后是否自动安装（否则只在界面/托盘提示，由人确认）。</summary>
+        public bool UpdateAutoInstall
+        {
+            get => Update.Mode == UpdateMode.Auto;
+            set
+            {
+                Update.Mode = value ? UpdateMode.Auto : UpdateMode.Prompt;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(UpdateCheckEnabled));
+            }
         }
 
         private string _statusText = "";
@@ -42,18 +71,34 @@ namespace PLCTesting.ViewModels
 
         /// <param name="store">设置存储；为空则用进程单例。</param>
         /// <param name="startup">开机启动服务；为空则用真实注册表。</param>
-        public SystemSettingsViewModel(AppSettingsStore store = null, StartupService startup = null)
+        /// <param name="update">自动更新服务；为空则用进程单例。</param>
+        public SystemSettingsViewModel(AppSettingsStore store = null, StartupService startup = null, UpdateService update = null)
         {
             _store = store ?? AppSettingsStore.Default;
             _startup = startup ?? new StartupService();
+            Update = update ?? UpdateService.Default;
 
             // 以注册表为准回显勾选状态：开机启动可能被外部工具/杀毒清理掉
             _startup.SyncTo(_store.Current);
 
             _autoStartOnBoot = _store.Current.AutoStartOnBoot;
 
+            // Update 自己改 Mode 时，本 VM 的两个派生属性要跟着刷新
+            Update.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(UpdateService.Mode) || string.IsNullOrEmpty(e.PropertyName))
+                {
+                    RaisePropertyChanged(nameof(UpdateCheckEnabled));
+                    RaisePropertyChanged(nameof(UpdateAutoInstall));
+                }
+            };
+
             SaveCommand = new DelegateCommand(ExecuteSave);
             RefreshStatus();
+
+            // 打开设置窗口就顺手查一次（已是最新/失败都会把结果显示在状态栏）
+            if (Update.Mode != UpdateMode.Off)
+                _ = Update.CheckAsync(false);
         }
 
         private void RefreshStatus()
@@ -69,9 +114,13 @@ namespace PLCTesting.ViewModels
         {
             try
             {
+                // ⚠️ 必须把 Update 里已经改好的策略原样带上：
+                // 自动更新的勾选是"即时保存"的，这里再 new 一个空设置会把它们清回默认值。
                 var settings = new AppSettings
                 {
-                    AutoStartOnBoot = AutoStartOnBoot
+                    AutoStartOnBoot = AutoStartOnBoot,
+                    UpdateMode = Update.Mode,
+                    SkippedVersion = _store.Current.SkippedVersion
                 };
 
                 _startup.Set(AutoStartOnBoot);

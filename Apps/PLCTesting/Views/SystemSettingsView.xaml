@@ -3,14 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="系统设置"
         Width="470"
-        Height="400"
-        MinHeight="370"
+        Height="660"
+        MinHeight="620"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResizeWithGrip"
         FontFamily="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif"
         Background="#E8ECF0">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
         <Style x:Key="GroupTitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="Bold" />
@@ -44,7 +46,8 @@
             </StackPanel>
         </Border>
 
-        <StackPanel Grid.Row="1">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
             <!-- 运行方式 -->
             <TextBlock Text="运行方式" Style="{StaticResource GroupTitle}" />
             <Border Background="White" CornerRadius="6" Padding="12">
@@ -58,6 +61,59 @@
                 </StackPanel>
             </Border>
 
+            <!-- 自动更新 -->
+            <TextBlock Text="自动更新" Style="{StaticResource GroupTitle}" Margin="0,12,0,6" />
+            <Border Background="White" CornerRadius="6" Padding="12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" FontSize="11" Foreground="#606266">
+                            <Run Text="当前版本 " />
+                            <Run Text="{Binding Update.CurrentVersionText, Mode=OneWay}" FontWeight="Bold" />
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" FontSize="11" Foreground="#409EFF"
+                                   Text="{Binding Update.LatestVersionText, StringFormat='最新 {0}'}" />
+                    </Grid>
+
+                    <CheckBox FontSize="11" Content="自动检测新版本"
+                              IsChecked="{Binding UpdateCheckEnabled}" />
+                    <CheckBox FontSize="11" Margin="0,6,0,0"
+                              Content="检测到后自动安装（不提示，装完自动重启）"
+                              IsChecked="{Binding UpdateAutoInstall}"
+                              IsEnabled="{Binding UpdateCheckEnabled}" />
+                    <TextBlock Margin="22,2,0,0" FontSize="10" Foreground="#909399" TextWrapping="Wrap"
+                               Text="不勾「自动安装」＝只提示、由你确认后再装。程序未以管理员身份运行时，安装步骤会弹一次系统授权框（UAC），这是 Windows 的限制，无法绕过。" />
+
+                    <ProgressBar Height="6" Margin="0,8,0,0" Minimum="0" Maximum="100"
+                                 Value="{Binding Update.DownloadProgress}"
+                                 Visibility="{Binding Update.IsDownloading, Converter={StaticResource BoolToVis}}" />
+
+                    <Border Background="#F2F6FC" CornerRadius="4" Padding="8,6" Margin="0,8,0,0">
+                        <TextBlock FontSize="10" Foreground="#666" TextWrapping="Wrap"
+                                   Text="{Binding Update.StatusText}" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="🔍 检查更新" Style="{StaticResource AccentButton}" Padding="10,5"
+                                Command="{Binding Update.CheckCommand}" />
+                        <Button Content="⬆ 下载并安装" Style="{StaticResource AccentButton}" Padding="10,5" Margin="8,0,0,0"
+                                Background="#67C23A"
+                                Command="{Binding Update.InstallCommand}"
+                                Visibility="{Binding Update.CanInstall, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="跳过此版本" Style="{StaticResource AccentButton}" Padding="10,5" Margin="8,0,0,0"
+                                Background="#909399"
+                                Command="{Binding Update.SkipCommand}"
+                                Visibility="{Binding Update.CanInstall, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <TextBlock FontSize="10" Foreground="#909399" TextWrapping="Wrap" Margin="0,6,0,0"
+                               Text="{Binding Update.ReleaseNotes}" />
+                </StackPanel>
+            </Border>
+
             <!-- 注册表实际状态 -->
             <TextBlock Text="当前状态" Style="{StaticResource GroupTitle}" Margin="0,12,0,6" />
             <Border Background="#F2F6FC" CornerRadius="6" Padding="12">
@@ -65,6 +121,7 @@
                            Text="{Binding StatusText}" />
             </Border>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- 底部按钮 -->
         <Border Grid.Row="2" Background="#1A2A3A" CornerRadius="8" Padding="12" Margin="0,12,0,0">
