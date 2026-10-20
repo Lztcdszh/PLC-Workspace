@@ -48,6 +48,15 @@ namespace PLCTesting.Services
         private readonly HttpClient _http;
 
         private string _downloadUrl = "";
+        /// <summary>
+        /// 资产的 API 端点（<c>assets[].url</c>，形如
+        /// <c>https://api.github.com/repos/&lt;owner&gt;/&lt;repo&gt;/releases/assets/&lt;id&gt;</c>）。
+        /// ⚠️ 这是**首选**下载地址：<c>browser_download_url</c> 指向 github.com，
+        /// 该域名在部分现场网络（代理/防火墙）下完全不可达，会表现为"下载失败"。
+        /// 带 <c>Accept: application/octet-stream</c> 请求 API 端点，GitHub 会 302 到
+        /// <c>release-assets.githubusercontent.com</c>，公开仓库**无需认证**即可下载。
+        /// </summary>
+        private string _downloadApiUrl = "";
         private string _assetName = "";
         private string _assetDigest = "";
         private long _assetSize;
@@ -135,7 +144,10 @@ namespace PLCTesting.Services
         }
 
         /// <summary>有可用新版本、且远端确实提供了可安装的包。</summary>
-        public bool CanInstall => IsUpdateAvailable && !string.IsNullOrEmpty(_downloadUrl) && !IsBusy;
+        public bool CanInstall =>
+            IsUpdateAvailable
+            && (!string.IsNullOrEmpty(_downloadApiUrl) || !string.IsNullOrEmpty(_downloadUrl))
+            && !IsBusy;
 
         /// <summary>更新策略（读写 appsettings.json）。</summary>
         public UpdateMode Mode
@@ -173,7 +185,13 @@ namespace PLCTesting.Services
         public UpdateService(AppSettingsStore store)
         {
             _store = store ?? AppSettingsStore.Default;
-            _http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+            // ⚠️ Timeout 绝不能设小值：HttpClient.Timeout 覆盖的是**整个请求，包含读取响应体**。
+            // 安装包约 70MB，20 秒内根本下不完（实测网络好时约 8~11 秒，慢时几分钟），
+            // 会直接抛 TaskCanceledException，表现为「下载失败」。
+            // 因此这里设为无限超时，改由每个请求各自的 CancellationTokenSource 控制：
+            //   - 检查更新（只读一小段 JSON）：30 秒
+            //   - 下载安装包：20 分钟
+            _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
 
             CheckCommand = new DelegateCommand(async () => await CheckAsync(true));
             InstallCommand = new DelegateCommand(async () =>
@@ -220,7 +238,9 @@ namespace PLCTesting.Services
                 req.Headers.UserAgent.ParseAdd($"PLCTesting-Updater/{Short(CurrentVersion)}");
                 req.Headers.Accept.ParseAdd("application/vnd.github+json");
 
-                using var resp = await _http.SendAsync(req).ConfigureAwait(false);
+                // 只取一小段 JSON，30 秒足够；与下载用的长超时分开，避免互相拖累
+                using var checkCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var resp = await _http.SendAsync(req, checkCts.Token).ConfigureAwait(false);
 
                 if (resp.StatusCode == HttpStatusCode.NotFound)
                 {
@@ -294,6 +314,7 @@ namespace PLCTesting.Services
             ReleaseNotes = PlainSummary(body, 120);
 
             _downloadUrl = "";
+            _downloadApiUrl = "";
             _assetName = "";
             _assetDigest = "";
             _assetSize = 0;
@@ -321,6 +342,8 @@ namespace PLCTesting.Services
                     var a = pick.Value;
                     _assetName = a.TryGetProperty("name", out var n2) ? (n2.GetString() ?? "") : "";
                     _downloadUrl = a.TryGetProperty("browser_download_url", out var u) ? (u.GetString() ?? "") : "";
+                    // API 端点：首选，走 api.github.com（现场网络通常只有这个域名可达）
+                    _downloadApiUrl = a.TryGetProperty("url", out var apiUrl) ? (apiUrl.GetString() ?? "") : "";
                     _assetSize = a.TryGetProperty("size", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt64() : 0;
                     // GitHub 自 2024 起为资产提供 digest（形如 "sha256:xxxx"），有就用来校验
                     _assetDigest = a.TryGetProperty("digest", out var d) && d.ValueKind == JsonValueKind.String
@@ -357,43 +380,91 @@ namespace PLCTesting.Services
             DownloadProgress = 0;
             try
             {
-                StatusText = $"正在下载 {_assetName}…";
-                Log.Information("开始下载更新包 {Url} → {Path}", _downloadUrl, msiPath);
-
-                using var resp = await _http.GetAsync(_downloadUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-                resp.EnsureSuccessStatusCode();
-                var total = resp.Content.Headers.ContentLength ?? _assetSize;
-
-                await using (var src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                await using (var dst = new FileStream(msiPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                // 候选下载地址，**API 端点优先**：
+                //   browser_download_url 指向 github.com，很多现场网络（代理/防火墙）完全不可达，
+                //   直连会 10 秒超时后 HTTP=000，表现为「更新下载失败」。
+                //   assets[].url + Accept: application/octet-stream 走 api.github.com，
+                //   由 GitHub 302 到 release-assets.githubusercontent.com，公开仓库无需认证。
+                var candidates = new (string Url, bool IsApi)[]
                 {
-                    var buffer = new byte[81920];
-                    long done = 0;
-                    int read;
-                    while ((read = await src.ReadAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false)) > 0)
+                    (_downloadApiUrl, true),
+                    (_downloadUrl, false),
+                }.Where(c => !string.IsNullOrEmpty(c.Url)).ToArray();
+
+                if (candidates.Length == 0)
+                {
+                    StatusText = "远端没有提供可用的下载地址";
+                    Log.Error(null, "下载中止：两个下载地址都为空");
+                    return;
+                }
+
+                Exception lastError = null;
+                var verified = false;
+
+                foreach (var (url, isApi) in candidates)
+                {
+                    for (var attempt = 1; attempt <= 2; attempt++)
                     {
-                        await dst.WriteAsync(buffer.AsMemory(0, read)).ConfigureAwait(false);
-                        done += read;
-                        if (total > 0) DownloadProgress = Math.Round(done * 100.0 / total, 1);
+                        try
+                        {
+                            StatusText = attempt == 1
+                                ? $"正在下载 {_assetName}…"
+                                : $"正在重试下载 {_assetName}（第 {attempt} 次）…";
+
+                            Log.Information("开始下载更新包 第{Attempt}次 IsApi={IsApi} Url={Url} → {Path}",
+                                attempt, isApi, url, msiPath);
+
+                            await DownloadToFileAsync(url, isApi, msiPath).ConfigureAwait(false);
+
+                            // 校验：优先用远端 digest，退而核对大小
+                            var sizeOk = _assetSize <= 0 || new FileInfo(msiPath).Length == _assetSize;
+                            var digestOk = true;
+                            if (_assetDigest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var expect = _assetDigest.Substring(7).Trim().ToLowerInvariant();
+                                var actual = await Sha256Async(msiPath).ConfigureAwait(false);
+                                digestOk = string.Equals(expect, actual, StringComparison.OrdinalIgnoreCase);
+                                Log.Information("更新包校验 SHA256 期望={Expect} 实际={Actual} 一致={Ok}",
+                                    expect, actual, digestOk);
+                            }
+
+                            if (!sizeOk || !digestOk)
+                            {
+                                try { File.Delete(msiPath); } catch { }
+                                StatusText = "更新包校验失败，已删除，正在换一个地址重试…";
+                                Log.Error(null, "更新包校验失败 大小一致={SizeOk} 摘要一致={DigestOk}", sizeOk, digestOk);
+                                continue;   // 换下一个地址/下一次重试
+                            }
+
+                            verified = true;
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            lastError = ex;
+                            Log.Warning(ex, "下载失败 第{Attempt}次 IsApi={IsApi} Url={Url}", attempt, isApi, url);
+                            try { if (File.Exists(msiPath)) File.Delete(msiPath); } catch { }
+                            if (attempt < 2)
+                            {
+                                StatusText = $"下载中断，正在重试（{ex.Message}）…";
+                                await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                            }
+                        }
+                    }
+
+                    if (verified) break;
+
+                    if (candidates.Length > 1)
+                    {
+                        Log.Information("该地址下载失败，改用下一个地址重试");
+                        StatusText = "当前地址不可用，正在换备用地址…";
                     }
                 }
 
-                // 校验：优先用远端 digest，退而核对大小
-                var sizeOk = _assetSize <= 0 || new FileInfo(msiPath).Length == _assetSize;
-                var digestOk = true;
-                if (_assetDigest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                if (!verified)
                 {
-                    var expect = _assetDigest.Substring(7).Trim().ToLowerInvariant();
-                    var actual = await Sha256Async(msiPath).ConfigureAwait(false);
-                    digestOk = string.Equals(expect, actual, StringComparison.OrdinalIgnoreCase);
-                    Log.Information("更新包校验 SHA256 期望={Expect} 实际={Actual} 一致={Ok}", expect, actual, digestOk);
-                }
-
-                if (!sizeOk || !digestOk)
-                {
-                    try { File.Delete(msiPath); } catch { }
-                    StatusText = "更新包校验失败，已删除，请重试";
-                    Log.Error(null, "更新包校验失败 大小一致={SizeOk} 摘要一致={DigestOk}", sizeOk, digestOk);
+                    StatusText = "下载失败：" + (lastError?.Message ?? "所有下载地址均不可用");
+                    Log.Error(lastError, "更新包下载最终失败（已尝试全部地址与重试）");
                     return;
                 }
 
@@ -407,6 +478,44 @@ namespace PLCTesting.Services
                 IsDownloading = false;
                 IsBusy = false;
             }
+        }
+
+        /// <summary>
+        /// 把 url 下载到 destPath。
+        /// 超时策略：HttpClient.Timeout 已设为无限，这里用 <see cref="CancellationTokenSource"/>
+        /// 给整个下载 20 分钟上限（70MB 在 3G 网络下也够）。
+        /// isApi=true 时加 <c>Accept: application/octet-stream</c>，否则 API 端点只返回 JSON 元数据。
+        /// </summary>
+        private async Task DownloadToFileAsync(string url, bool isApi, string destPath)
+        {
+            using var overall = new CancellationTokenSource(TimeSpan.FromMinutes(20));
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            if (isApi) req.Headers.Accept.ParseAdd("application/octet-stream");
+            req.Headers.UserAgent.ParseAdd($"PLCTesting-Updater/{Short(CurrentVersion)}");
+
+            using var resp = await _http
+                .SendAsync(req, HttpCompletionOption.ResponseHeadersRead, overall.Token)
+                .ConfigureAwait(false);
+            resp.EnsureSuccessStatusCode();
+
+            var total = resp.Content.Headers.ContentLength ?? _assetSize;
+            if (total <= 0) total = _assetSize;
+
+            await using var src = await resp.Content.ReadAsStreamAsync(overall.Token).ConfigureAwait(false);
+            await using var dst = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            var buffer = new byte[81920];
+            long done = 0;
+            int read;
+            while ((read = await src.ReadAsync(buffer.AsMemory(0, buffer.Length), overall.Token)
+                                   .ConfigureAwait(false)) > 0)
+            {
+                await dst.WriteAsync(buffer.AsMemory(0, read), overall.Token).ConfigureAwait(false);
+                done += read;
+                if (total > 0) DownloadProgress = Math.Round(done * 100.0 / total, 1);
+            }
+
+            Log.Information("下载流结束 已写入={Done} 期望={Total} IsApi={IsApi}", done, total, isApi);
         }
 
         /// <summary>
