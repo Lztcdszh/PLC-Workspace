@@ -1,0 +1,316 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      ============================================================================
+      PLCTesting 全局视觉主题（2026-10-20 统一改版）
+      ============================================================================
+      设计原则：
+      1) 色值只在这里定义一次，且与 MyPLCUserControlLibrary/Themes/PlcStyles.xaml
+         的 Element 调色板完全一致 —— 窗口自绘部分与 PlcPanel / PlcValueDisplay /
+         PlcTrendControl 等控件天然同色，不会出现"两种蓝"。
+      2) 清爽优先：浅灰页面底 + 白色卡片 + 细边框，不用渐变、不用辉光、不用投影
+         （DropShadowEffect 在高分屏离屏渲染时会把整窗位图拉伸发糊）。
+      3) 语义化命名（Txt* / Btn* / Card*），各窗口只引用，不各自定义颜色。
+      ============================================================================
+    -->
+
+    <!-- ============ 语义色 ============ -->
+    <SolidColorBrush x:Key="AppPageBg" Color="#F5F7FA" />
+    <SolidColorBrush x:Key="AppSurface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppSurfaceAlt" Color="#F7F9FC" />
+    <SolidColorBrush x:Key="AppBorder" Color="#EBEEF5" />
+    <SolidColorBrush x:Key="AppBorderStrong" Color="#DCDFE6" />
+
+    <SolidColorBrush x:Key="AppText" Color="#303133" />
+    <SolidColorBrush x:Key="AppTextSub" Color="#606266" />
+    <SolidColorBrush x:Key="AppTextFaint" Color="#909399" />
+
+    <SolidColorBrush x:Key="AppAccent" Color="#409EFF" />
+    <SolidColorBrush x:Key="AppAccentSoft" Color="#ECF5FF" />
+    <SolidColorBrush x:Key="AppSuccess" Color="#67C23A" />
+    <SolidColorBrush x:Key="AppSuccessSoft" Color="#F0F9EB" />
+    <SolidColorBrush x:Key="AppWarning" Color="#E6A23C" />
+    <SolidColorBrush x:Key="AppWarningSoft" Color="#FDF6EC" />
+    <SolidColorBrush x:Key="AppDanger" Color="#F56C6C" />
+    <SolidColorBrush x:Key="AppDangerSoft" Color="#FEF0F0" />
+
+    <!-- ============ 文字层级 ============ -->
+    <Style x:Key="TxtPageTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource AppText}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="TxtSubtitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextFaint}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="TxtSection" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource AppText}" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style x:Key="TxtBody" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+    </Style>
+
+    <Style x:Key="TxtCaption" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextFaint}" />
+    </Style>
+
+    <!-- 页面标题行：左侧色块 + 图标 + 标题 + 副标题（各窗口统一用它做头部） -->
+    <Style x:Key="PageTitleIcon" TargetType="Border">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+    </Style>
+
+    <!-- ============ 卡片 ============ -->
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AppSurface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="CardTight" TargetType="Border" BasedOn="{StaticResource Card}">
+        <Setter Property="Padding" Value="10" />
+    </Style>
+
+    <!-- 浅底提示条 -->
+    <Style x:Key="HintBar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AppSurfaceAlt}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <!-- ============ 按钮 ============ -->
+    <!-- 统一用 Opacity 表达 hover/press/disabled，所有颜色变体共用一套状态，避免各窗口自定义模板 -->
+    <Style x:Key="BtnBase" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource AppSurface}" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorderStrong}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            CornerRadius="6"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="Cp"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.88" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.72" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.42" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 主操作：填充强调蓝，一屏最多一个 -->
+    <Style x:Key="BtnPrimary" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{StaticResource AppAccent}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppAccent}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- 次操作：白底细边，用于工具栏与对话框"取消" -->
+    <Style x:Key="BtnSecondary" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{StaticResource AppSurface}" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorderStrong}" />
+    </Style>
+
+    <!-- 轻量：无边框，用于行内的文字型操作 -->
+    <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+        <Setter Property="Padding" Value="10,5" />
+    </Style>
+
+    <Style x:Key="BtnSuccess" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{StaticResource AppSuccess}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppSuccess}" />
+    </Style>
+
+    <Style x:Key="BtnWarning" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{StaticResource AppWarning}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppWarning}" />
+    </Style>
+
+    <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{StaticResource AppDanger}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppDanger}" />
+    </Style>
+
+    <!-- 小号：卡片内页脚、表格行操作 -->
+    <Style x:Key="BtnSm" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Padding" Value="10,4" />
+    </Style>
+
+    <!-- ============ 输入控件 ============ -->
+    <Style TargetType="TextBox">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Foreground" Value="{StaticResource AppText}" />
+        <Setter Property="Background" Value="{StaticResource AppSurface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorderStrong}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Bd"
+                            CornerRadius="6"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="#C0C4CC" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AppAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AppSurfaceAlt}" />
+                            <Setter Property="Foreground" Value="{StaticResource AppTextFaint}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ComboBox">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Foreground" Value="{StaticResource AppText}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="MinHeight" Value="28" />
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+        <Setter Property="Padding" Value="0,0,8,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style TargetType="DatePicker">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- ============ 表格 ============ -->
+    <Style TargetType="DataGrid">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Background" Value="{StaticResource AppSurface}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="RowBackground" Value="{StaticResource AppSurface}" />
+        <Setter Property="AlternatingRowBackground" Value="#FAFBFC" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource AppBorder}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{StaticResource AppBorder}" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="RowHeight" Value="32" />
+        <Setter Property="CanUserAddRows" Value="False" />
+        <Setter Property="CanUserDeleteRows" Value="False" />
+        <Setter Property="AutoGenerateColumns" Value="False" />
+        <Setter Property="SelectionMode" Value="Single" />
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource AppSurfaceAlt}" />
+        <Setter Property="Foreground" Value="{StaticResource AppTextSub}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+
+    <Style TargetType="DataGridCell">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="Foreground" Value="{StaticResource AppText}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+                <Setter Property="Foreground" Value="{StaticResource AppText}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--
+      滚动条保持系统默认样式：自绘 Track 模板要正确处理 Orientation / 双向 ScrollBar
+      的 IsDirectionReversed，一旦写错会让表格与滚动面板"滚不动"，收益远小于风险。
+    -->
+
+</ResourceDictionary>

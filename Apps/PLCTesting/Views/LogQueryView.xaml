@@ -5,14 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="PLC 变化日志查询"
-        Width="1100"
-        Height="700"
+        Width="1150"
+        Height="720"
+        MinWidth="900"
+        MinHeight="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         FontFamily="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif"
-        Background="#E8ECF0">
+        Background="{StaticResource AppPageBg}"
+        UseLayoutRounding="True">
 
-    <Grid Margin="20">
+    <Grid Margin="20,18,20,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -20,87 +23,85 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 标题 -->
-        <TextBlock Grid.Row="0" Text="📜 PLC 标签变化日志" FontSize="18" FontWeight="Bold"
-                   Foreground="#1A2A3A" Margin="0,0,0,16" />
+        <!-- ===== 页头 ===== -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,14">
+            <Border Style="{StaticResource PageTitleIcon}">
+                <TextBlock Text="📜" FontSize="16" Foreground="{StaticResource AppAccent}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="标签变化日志" Style="{StaticResource TxtPageTitle}" />
+                <TextBlock Text="按地址与时间范围检索 PLC 标签的历史变化" Style="{StaticResource TxtSubtitle}" Margin="0,2,0,0" />
+            </StackPanel>
+        </StackPanel>
 
-        <!-- 过滤条件 -->
-        <Border Grid.Row="1" Background="White" Margin="0,0,0,12" Padding="12" CornerRadius="6">
-            <Border.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4" Opacity="0.1" />
-            </Border.Effect>
+        <!-- ===== 过滤条件 ===== -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14,12" Margin="0,0,0,12">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="160" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="160" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="160" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="地址：" VerticalAlignment="Center" Margin="0,0,6,0" />
-            <ComboBox Grid.Column="1" ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}" VerticalContentAlignment="Center" />
+                <TextBlock Grid.Column="0" Text="地址" Style="{StaticResource TxtCaption}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}" />
 
-            <TextBlock Grid.Column="2" Text="开始：" VerticalAlignment="Center" Margin="12,0,6,0" />
-            <DatePicker Grid.Column="3" SelectedDate="{Binding StartTime}" VerticalContentAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="开始" Style="{StaticResource TxtCaption}"
+                           VerticalAlignment="Center" Margin="16,0,8,0" />
+                <DatePicker Grid.Column="3" SelectedDate="{Binding StartTime}" />
 
-            <TextBlock Grid.Column="4" Text="结束：" VerticalAlignment="Center" Margin="12,0,6,0" />
-            <DatePicker Grid.Column="5" SelectedDate="{Binding EndTime}" VerticalContentAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="结束" Style="{StaticResource TxtCaption}"
+                           VerticalAlignment="Center" Margin="16,0,8,0" />
+                <DatePicker Grid.Column="5" SelectedDate="{Binding EndTime}" />
 
-            <Button Grid.Column="6" Content="🔍 查询" Margin="12,0,8,0" Padding="12,4" Background="#409EFF" Foreground="White" FontWeight="Bold"
-                    Command="{Binding QueryCommand}" />
-            <Button Grid.Column="7" Content="🧪 生成测试数据" Margin="0,0,8,0" Padding="12,4" Background="#67C23A" Foreground="White" FontWeight="Bold"
-                    Command="{Binding SeedDemoCommand}" />
-            <Button Grid.Column="8" Content="🗑️ 清空" Padding="12,4" Background="#F56C6C" Foreground="White" FontWeight="Bold"
-                    Command="{Binding ClearAllCommand}" />
+                <Button Grid.Column="7" Content="查询" Style="{StaticResource BtnPrimary}" MinWidth="80"
+                        Margin="0,0,8,0" Command="{Binding QueryCommand}" />
+                <Button Grid.Column="8" Content="生成测试数据" Style="{StaticResource BtnSecondary}"
+                        Margin="0,0,8,0" Command="{Binding SeedDemoCommand}" />
+                <Button Grid.Column="9" Content="清空" Style="{StaticResource BtnGhost}"
+                        Foreground="{StaticResource AppDanger}" Command="{Binding ClearAllCommand}" />
             </Grid>
         </Border>
 
-        <!-- 数据表格 -->
-        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="1">
-            <Border.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="6" Opacity="0.1" />
-            </Border.Effect>
-            <DataGrid ItemsSource="{Binding Records}" AutoGenerateColumns="False" IsReadOnly="True"
-                      GridLinesVisibility="Horizontal" HeadersVisibility="Column"
-                      RowBackground="White" AlternatingRowBackground="#F8F9FA"
-                      HorizontalGridLinesBrush="#EBEEF5" VerticalGridLinesBrush="#EBEEF5"
-                      BorderThickness="0" CanUserAddRows="False" CanUserDeleteRows="False">
+        <!-- ===== 表格 ===== -->
+        <Border Grid.Row="2" Style="{StaticResource CardTight}" Padding="1">
+            <DataGrid ItemsSource="{Binding Records}" IsReadOnly="True" CanUserAddRows="False"
+                      CanUserDeleteRows="False">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding TimeStamp, StringFormat=yyyy-MM-dd HH:mm:ss.fff}" Width="180" />
-                    <DataGridTextColumn Header="PLC 地址" Binding="{Binding TagAddress}" Width="120" />
-                    <DataGridTextColumn Header="标签名" Binding="{Binding TagName}" Width="120" />
-                    <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="80" />
-                    <DataGridTextColumn Header="旧值" Binding="{Binding OldValue}" Width="120" />
-                    <DataGridTextColumn Header="新值" Binding="{Binding NewValue}" Width="120" />
+                    <DataGridTextColumn Header="时间" Binding="{Binding TimeStamp, StringFormat=yyyy-MM-dd HH:mm:ss.fff}" Width="190" />
+                    <DataGridTextColumn Header="PLC 地址" Binding="{Binding TagAddress}" Width="130" />
+                    <DataGridTextColumn Header="标签名" Binding="{Binding TagName}" Width="*" />
+                    <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="90" />
+                    <DataGridTextColumn Header="旧值" Binding="{Binding OldValue}" Width="130" />
+                    <DataGridTextColumn Header="新值" Binding="{Binding NewValue}" Width="130" />
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
 
-        <!-- 分页与状态 -->
-        <Grid Grid.Row="3" Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="#606266" />
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button Content="上一页" Padding="10,3" Margin="0,0,8,0"
-                        Command="{Binding PrevPageCommand}" />
-                <Button Content="下一页" Padding="10,3"
-                        Command="{Binding NextPageCommand}" />
-            </StackPanel>
-        </Grid>
+        <!-- ===== 页脚 ===== -->
+        <Border Grid.Row="3" BorderBrush="{StaticResource AppBorder}" BorderThickness="0,1,0,0"
+                Padding="0,12,0,14" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center"
+                           Style="{StaticResource TxtCaption}" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="上一页" Style="{StaticResource BtnSecondary}" Command="{Binding PrevPageCommand}" />
+                    <Button Content="下一页" Style="{StaticResource BtnSecondary}" Margin="8,0,0,0" Command="{Binding NextPageCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

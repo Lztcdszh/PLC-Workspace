@@ -289,8 +289,9 @@ namespace PLCTesting.Services
             _latestVersion = ver;
             _releasePageUrl = root.TryGetProperty("html_url", out var h) ? (h.GetString() ?? "") : "";
             var body = root.TryGetProperty("body", out var b) ? (b.GetString() ?? "") : "";
-            // 更新说明只取前 600 字，够看要点又不至于撑爆界面
-            ReleaseNotes = body.Length > 600 ? body.Substring(0, 600) + "…" : body;
+            // 发布说明是 Markdown，界面上只有一行两行的位置：去掉 #/*/` 之类的标记，
+            // 把换行压成空格，只留一句能看懂的话（否则窗口里会直接看到 "## 修复：..."）。
+            ReleaseNotes = PlainSummary(body, 120);
 
             _downloadUrl = "";
             _assetName = "";
@@ -475,9 +476,37 @@ namespace PLCTesting.Services
 
         #region 辅助
 
+        /// <summary>
+        /// 把 GitHub Release 的 Markdown 正文压成一句纯文本摘要：
+        /// 去掉标题井号、强调星号、行内代码反引号与引用符号，换行折成空格，超长截断。
+        /// </summary>
+        internal static string PlainSummary(string markdown, int maxLen)
+        {
+            if (string.IsNullOrWhiteSpace(markdown)) return "";
+
+            var sb = new StringBuilder(markdown.Length);
+            foreach (var ch in markdown)
+            {
+                // # * ` > | 这些标记在摘要里没有意义；- 只保留作连字符
+                if (ch is '#' or '*' or '`' or '>' or '|') continue;
+                sb.Append(ch == '\r' ? ' ' : ch);
+            }
+
+            var flat = sb.ToString()
+                .Replace("\n", " ")
+                .Replace("  ", " ")
+                .Trim();
+
+            if (flat.Length <= maxLen) return flat;
+
+            // 尽量在句子边界截断，避免半句话
+            var cut = flat.LastIndexOf('。', Math.Min(maxLen - 1, flat.Length - 1));
+            if (cut < maxLen / 3) cut = maxLen - 1;
+            return flat.Substring(0, cut + 1).TrimEnd() + "…";
+        }
+
         /// <summary>只保留 主.次.修订 三段，避免 1.1.6 与 1.1.6.0 比较时被判为不同版本。</summary>
-        internal static string Short(Version v) =>
-            v.Build > 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}";
+        internal static string Short(Version v) =>            v.Build > 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}";
 
         internal static Version Normalize(Version v) =>
             new(v.Major, v.Minor, v.Build > 0 ? v.Build : 0);

@@ -4,10 +4,23 @@
              xmlns:local="clr-namespace:PLCTesting"
              xmlns:prism="http://prismlibrary.com/" >
     <Application.Resources>
-        <!-- 全应用锐化文字渲染：默认 Ideal 模式在高分屏下偏软，Display 模式贴像素更清晰 -->
-        <Style TargetType="FrameworkElement">
-            <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
-            <Setter Property="TextOptions.TextRenderingMode" Value="Auto" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--
+                  控件库调色板（PlcAccentBrush / PlcBorderBrush / PlcTextBrush / PlcCardBorder …）。
+                  提升到应用级后，窗口自绘部分可以直接复用，保证"卡片边框色 = 输入框边框色 = 强调蓝"，
+                  不会出现两套蓝。PlcPanel 内部仍各自合并一次，两者互不影响。
+                -->
+                <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml" />
+                <!-- 应用级设计系统：语义色 / 文字层级 / 按钮 / 输入控件 / 表格 -->
+                <ResourceDictionary Source="Themes/AppTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- 全应用锐化文字渲染：默认 Ideal 模式在高分屏下偏软，Display 模式贴像素更清晰 -->
+            <Style TargetType="FrameworkElement">
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+                <Setter Property="TextOptions.TextRenderingMode" Value="Auto" />
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </prism:PrismApplication>
