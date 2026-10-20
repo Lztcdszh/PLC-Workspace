@@ -41,7 +41,7 @@ namespace MyPLCUserControlLibrary
 
         public static readonly DependencyProperty HeaderBrushProperty =
             DependencyProperty.Register(nameof(HeaderBrush), typeof(Brush), typeof(PlcPanel),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(245, 247, 250))));
+                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(38, 38, 38))));
 
         public Brush HeaderBrush
         {

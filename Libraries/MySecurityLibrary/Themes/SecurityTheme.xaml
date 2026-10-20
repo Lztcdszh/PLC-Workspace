@@ -3,7 +3,7 @@
 
     <!--
       ============================================================================
-      MySecurityLibrary 轻量视觉主题
+      MySecurityLibrary 视觉主题（v1.2.0 现代深色）
       ============================================================================
       本库要能被别的程序集直接引用，不能反过来依赖 PLCTesting 的 AppTheme.xaml，
       所以这里自带一份等值的语义色（与 PLCTesting/Themes/AppTheme.xaml 保持同一套 hex）。
@@ -11,20 +11,26 @@
       ============================================================================
     -->
 
-    <SolidColorBrush x:Key="SecPageBg" Color="#F5F7FA" />
-    <SolidColorBrush x:Key="SecSurface" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="SecSurfaceAlt" Color="#F7F9FC" />
-    <SolidColorBrush x:Key="SecBorder" Color="#EBEEF5" />
-    <SolidColorBrush x:Key="SecBorderStrong" Color="#DCDFE6" />
+    <SolidColorBrush x:Key="SecPageBg" Color="#141414" />
+    <SolidColorBrush x:Key="SecSurface" Color="#1F1F1F" />
+    <SolidColorBrush x:Key="SecSurfaceAlt" Color="#262626" />
+    <SolidColorBrush x:Key="SecBorder" Color="#303030" />
+    <SolidColorBrush x:Key="SecBorderStrong" Color="#4A4A4A" />
 
-    <SolidColorBrush x:Key="SecText" Color="#303133" />
-    <SolidColorBrush x:Key="SecTextSub" Color="#606266" />
-    <SolidColorBrush x:Key="SecTextFaint" Color="#909399" />
+    <SolidColorBrush x:Key="SecText" Color="#E8E8E8" />
+    <SolidColorBrush x:Key="SecTextSub" Color="#B0B0B0" />
+    <SolidColorBrush x:Key="SecTextFaint" Color="#7A7A7A" />
 
     <SolidColorBrush x:Key="SecAccent" Color="#409EFF" />
-    <SolidColorBrush x:Key="SecAccentSoft" Color="#ECF5FF" />
+    <SolidColorBrush x:Key="SecAccentSoft" Color="#1B3350" />
     <SolidColorBrush x:Key="SecSuccess" Color="#67C23A" />
     <SolidColorBrush x:Key="SecDanger" Color="#F56C6C" />
+
+    <!-- 深色专用：输入底色、交互高亮层、文本选区 -->
+    <SolidColorBrush x:Key="SecInputBg" Color="#262626" />
+    <SolidColorBrush x:Key="SecHoverVeil" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SecSelection" Color="#55409EFF" />
+    <SolidColorBrush x:Key="SecRowAlt" Color="#232323" />
 
     <!-- 标题 / 标签 / 说明 -->
     <Style x:Key="SecTitle" TargetType="TextBlock">
@@ -45,10 +51,10 @@
         <Setter Property="Foreground" Value="{StaticResource SecTextFaint}" />
     </Style>
 
-    <!-- 按钮 -->
+    <!-- 按钮：交互反馈用白色半透明高亮层（深色下 Opacity 降透明度会越按越糊） -->
     <Style x:Key="SecBtnBase" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource SecSurface}" />
-        <Setter Property="Foreground" Value="{StaticResource SecTextSub}" />
+        <Setter Property="Background" Value="{StaticResource SecSurfaceAlt}" />
+        <Setter Property="Foreground" Value="{StaticResource SecText}" />
         <Setter Property="BorderBrush" Value="{StaticResource SecBorderStrong}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontSize" Value="12" />
@@ -65,19 +71,25 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             SnapsToDevicePixels="True">
-                        <ContentPresenter Margin="{TemplateBinding Padding}"
-                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        <Grid>
+                            <Border x:Name="Hl" CornerRadius="5"
+                                    Background="{StaticResource SecHoverVeil}"
+                                    Opacity="0" IsHitTestVisible="False" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Opacity" Value="0.88" />
+                            <Setter TargetName="Hl" Property="Opacity" Value="0.08" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bd" Property="Opacity" Value="0.72" />
+                            <Setter TargetName="Hl" Property="Opacity" Value="0.16" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Bd" Property="Opacity" Value="0.42" />
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.45" />
+                            <Setter TargetName="Hl" Property="Opacity" Value="0" />
                             <Setter Property="Cursor" Value="Arrow" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -99,6 +111,7 @@
         <Setter Property="Background" Value="{StaticResource SecDanger}" />
         <Setter Property="Foreground" Value="White" />
         <Setter Property="BorderBrush" Value="{StaticResource SecDanger}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <!-- 输入框（TextBox / PasswordBox 共用一套边框） -->
@@ -106,9 +119,12 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Padding" Value="9,6" />
         <Setter Property="Foreground" Value="{StaticResource SecText}" />
-        <Setter Property="Background" Value="{StaticResource SecSurface}" />
+        <Setter Property="Background" Value="{StaticResource SecInputBg}" />
         <Setter Property="BorderBrush" Value="{StaticResource SecBorderStrong}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CaretBrush" Value="{StaticResource SecText}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource SecSelection}" />
+        <Setter Property="SelectionTextBrush" Value="{StaticResource SecText}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <Setter.Value>
@@ -123,10 +139,14 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="#C0C4CC" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="#5A5A5A" />
                         </Trigger>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SecSurface}" />
+                            <Setter Property="Foreground" Value="{StaticResource SecTextFaint}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -138,9 +158,12 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Padding" Value="9,6" />
         <Setter Property="Foreground" Value="{StaticResource SecText}" />
-        <Setter Property="Background" Value="{StaticResource SecSurface}" />
+        <Setter Property="Background" Value="{StaticResource SecInputBg}" />
         <Setter Property="BorderBrush" Value="{StaticResource SecBorderStrong}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CaretBrush" Value="{StaticResource SecText}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource SecSelection}" />
+        <Setter Property="SelectionTextBrush" Value="{StaticResource SecText}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <Setter.Value>
@@ -155,10 +178,174 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="#C0C4CC" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="#5A5A5A" />
                         </Trigger>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SecSurface}" />
+                            <Setter Property="Foreground" Value="{StaticResource SecTextFaint}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+      下列隐式样式只在本库窗口的 Window.Resources 合并范围内生效（用户编辑窗的 ComboBox /
+      CheckBox）。默认模板的下拉 Popup 取系统 WindowBrush（白底），深色下必然是白块，
+      所以自绘完整模板。
+    -->
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource SecText}" />
+        <Setter Property="Padding" Value="9,5" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Margin="3,1"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SecSurfaceAlt}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SecAccentSoft}" />
+                            <Setter Property="Foreground" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ComboBox">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource SecText}" />
+        <Setter Property="Background" Value="{StaticResource SecInputBg}" />
+        <Setter Property="BorderBrush" Value="{StaticResource SecBorderStrong}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid x:Name="Root" SnapsToDevicePixels="True">
+                        <Border x:Name="Bd" CornerRadius="6"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True" />
+
+                        <ToggleButton Focusable="False" ClickMode="Press" Cursor="Hand"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent" SnapsToDevicePixels="True">
+                                        <Path Width="8" Height="5" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                              Margin="0,0,10,0" Data="M0,0 L8,0 L4,5 Z"
+                                              Fill="{StaticResource SecTextFaint}" />
+                                    </Border>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="ContentSite" Margin="9,0,26,0"
+                                          HorizontalAlignment="Left" VerticalAlignment="Center"
+                                          IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+
+                        <TextBox x:Name="PART_EditableTextBox" Style="{x:Null}" Visibility="Collapsed"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="{StaticResource SecText}"
+                                 CaretBrush="{StaticResource SecText}"
+                                 SelectionBrush="{StaticResource SecSelection}"
+                                 FontSize="{TemplateBinding FontSize}"
+                                 VerticalContentAlignment="Center" Margin="7,0,24,0"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}" />
+
+                        <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True"
+                               Focusable="False" PopupAnimation="None"
+                               IsOpen="{TemplateBinding IsDropDownOpen}">
+                            <Border MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                    Margin="0,2,0,0" Padding="1" CornerRadius="6"
+                                    Background="{StaticResource SecSurface}"
+                                    BorderBrush="{StaticResource SecBorderStrong}"
+                                    BorderThickness="1" SnapsToDevicePixels="True">
+                                <ScrollViewer SnapsToDevicePixels="True">
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEditable" Value="True">
+                            <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="ContentSite" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource SecTextSub}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid x:Name="Root" Background="Transparent">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="Box" Grid.Column="0" Width="15" Height="15" CornerRadius="3"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource SecInputBg}"
+                                BorderBrush="{StaticResource SecBorderStrong}"
+                                BorderThickness="1" SnapsToDevicePixels="True">
+                            <Path x:Name="Check" Width="9" Height="7" Stretch="Fill" Visibility="Collapsed"
+                                  Data="M0,3 L3.2,6.2 L9,0.4"
+                                  Stroke="{StaticResource SecAccent}" StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                        </Border>
+                        <ContentPresenter Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Box" Property="Background" Value="{StaticResource SecAccentSoft}" />
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource SecAccent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.45" />
+                            <Setter Property="Cursor" Value="Arrow" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

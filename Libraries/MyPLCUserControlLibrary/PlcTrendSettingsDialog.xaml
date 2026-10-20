@@ -14,21 +14,108 @@
                 <ResourceDictionary Source="/MyPLCUserControlLibrary;component/Themes/PlcStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <local:InverseBooleanConverter x:Key="InverseBool"/>
+            <!-- GroupBox：Aero 模板的边框是写死的浅色，深色下会画出一圈白框，故自绘 -->
             <Style TargetType="GroupBox">
                 <Setter Property="Margin" Value="0,0,0,10"/>
                 <Setter Property="Padding" Value="8,6"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
+                <Setter Property="Background" Value="{StaticResource PlcSurfaceBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource PlcBorderBrush}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GroupBox">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <ContentPresenter Grid.Row="0" ContentSource="Header"
+                                                  Margin="2,0,0,4"
+                                                  TextElement.Foreground="{StaticResource PlcTextBrush}"
+                                                  TextElement.FontWeight="SemiBold"/>
+                                <Border Grid.Row="1"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="{TemplateBinding Padding}"
+                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter/>
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
             <Style TargetType="TextBlock">
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0,0,8,0"/>
+                <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
             </Style>
+            <!-- 深色复选框：默认模板的方块取系统浅色，在深色窗上是一块小白砖，故自绘 -->
             <Style TargetType="CheckBox">
                 <Setter Property="Margin" Value="0,3"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Grid x:Name="Root" Background="Transparent">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="Box" Grid.Column="0" Width="15" Height="15" CornerRadius="3"
+                                        VerticalAlignment="Center"
+                                        Background="{StaticResource PlcSurfaceAltBrush}"
+                                        BorderBrush="{StaticResource PlcBorderBrush}"
+                                        BorderThickness="1" SnapsToDevicePixels="True">
+                                    <Path x:Name="Check" Width="9" Height="7" Stretch="Fill" Visibility="Collapsed"
+                                          Data="M0,3 L3.2,6.2 L9,0.4"
+                                          Stroke="{StaticResource PlcAccentBrush}" StrokeThickness="1.8"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                                </Border>
+                                <ContentPresenter Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center"
+                                                  TextElement.Foreground="{StaticResource PlcTextBrush}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PlcAccentBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PlcAccentBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Root" Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- 深色输入框：模板取系统浅色会在深色窗上变成白块 -->
+            <Style TargetType="TextBox">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Padding" Value="6,3"/>
+                <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
+                <Setter Property="Background" Value="{StaticResource PlcSurfaceAltBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource PlcBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CaretBrush" Value="{StaticResource PlcTextBrush}"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
+
+    <Window.Background>
+        <StaticResource ResourceKey="PlcSurfaceBrush"/>
+    </Window.Background>
+
     <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

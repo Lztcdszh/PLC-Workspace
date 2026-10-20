@@ -59,7 +59,7 @@ namespace MyPLCUserControlLibrary
                 // 设计时预览
                 this.Width = 100;
                 this.Height = 26;
-                this.Background = Brushes.White;
+                this.Background = new SolidColorBrush(Color.FromRgb(31, 31, 31));
                 this.Content = "123.45";
                 return;
             }

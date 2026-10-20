@@ -14,8 +14,8 @@
         UseLayoutRounding="True">
 
     <Window.Resources>
-        <!-- 连接状态点：绿=已连，灰=未连 -->
-        <local:BoolToBrushConverter x:Key="BoolToBrush" TrueBrush="#67C23A" FalseBrush="#C0C4CC" />
+        <!-- 连接状态点：绿=已连，灰=未连（深色主题下未连用中灰，纯浅灰会过亮） -->
+        <local:BoolToBrushConverter x:Key="BoolToBrush" TrueBrush="#67C23A" FalseBrush="#6E6E6E" />
         <!-- 运行态 → 按钮文案 -->
         <local:BoolToTextConverter x:Key="RunLabel" TrueText="⏹ 停止转发" FalseText="▶ 启动转发" />
     </Window.Resources>

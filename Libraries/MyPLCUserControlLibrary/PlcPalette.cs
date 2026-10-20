@@ -17,12 +17,14 @@ namespace MyPLCUserControlLibrary
         public static readonly Color InfoColor    = Color.FromRgb(144, 147, 153);  // 闲置/未知 灰
         public static readonly Color OffColor     = Color.FromRgb(82, 90, 102);    // 熄灭 深灰
 
-        // 文本/边框/背景
-        public static readonly Color TextColor        = Color.FromRgb(48, 49, 51);
-        public static readonly Color TextSecondaryColor = Color.FromRgb(117, 120, 126);
-        public static readonly Color BorderColor      = Color.FromRgb(220, 223, 230);
-        public static readonly Color BackgroundColor  = Color.FromRgb(255, 255, 255);
-        public static readonly Color PanelHeaderColor = Color.FromRgb(245, 247, 250);
+        // 文本/边框/背景（v1.2.0 深色板，与 Themes/PlcStyles.xaml 的 hex 保持一致）
+        public static readonly Color TextColor        = Color.FromRgb(232, 232, 232);
+        public static readonly Color TextSecondaryColor = Color.FromRgb(166, 166, 166);
+        public static readonly Color BorderColor      = Color.FromRgb(48, 48, 48);
+        public static readonly Color BorderStrongColor = Color.FromRgb(67, 67, 67);
+        public static readonly Color BackgroundColor  = Color.FromRgb(31, 31, 31);
+        public static readonly Color SurfaceAltColor  = Color.FromRgb(38, 38, 38);
+        public static readonly Color PanelHeaderColor = Color.FromRgb(38, 38, 38);
 
         // 画笔（每次返回新实例，避免跨控件共享冻结状态问题）
         public static SolidColorBrush AccentBrush   => new SolidColorBrush(AccentColor);
@@ -34,7 +36,9 @@ namespace MyPLCUserControlLibrary
         public static SolidColorBrush TextBrush      => new SolidColorBrush(TextColor);
         public static SolidColorBrush TextSecondaryBrush => new SolidColorBrush(TextSecondaryColor);
         public static SolidColorBrush BorderBrush    => new SolidColorBrush(BorderColor);
+        public static SolidColorBrush BorderStrongBrush => new SolidColorBrush(BorderStrongColor);
         public static SolidColorBrush BackgroundBrush => new SolidColorBrush(BackgroundColor);
+        public static SolidColorBrush SurfaceAltBrush => new SolidColorBrush(SurfaceAltColor);
 
         /// <summary>根据报警/状态级别返回对应语义色画笔。</summary>
         public static SolidColorBrush BrushForSeverity(PlcAlarmSeverity severity) => severity switch

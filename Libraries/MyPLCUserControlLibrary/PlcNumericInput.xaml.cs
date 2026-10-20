@@ -271,12 +271,13 @@ namespace MyPLCUserControlLibrary
                     Content = key.Label,
                     Margin = new Thickness(3),
                     FontSize = 16,
+                    // 深色软键盘：普通键深灰底浅字，OK 绿底白字，CANCEL 稍亮一档以示区分
                     Background = key.Cmd == "OK" ? PlcPalette.SuccessBrush
-                               : key.Cmd == "CANCEL" ? PlcPalette.BorderBrush
-                               : Brushes.White,
-                    Foreground = key.Cmd == "OK" ? Brushes.White : new SolidColorBrush(Color.FromRgb(48, 49, 51)),
+                               : key.Cmd == "CANCEL" ? PlcPalette.SurfaceAltBrush
+                               : PlcPalette.BackgroundBrush,
+                    Foreground = key.Cmd == "OK" ? Brushes.White : PlcPalette.TextBrush,
                     BorderThickness = new Thickness(1),
-                    BorderBrush = new SolidColorBrush(Color.FromRgb(220, 223, 230)),
+                    BorderBrush = PlcPalette.BorderStrongBrush,
                     Tag = key.Cmd,
                 };
                 btn.Click += OnKeyClick;

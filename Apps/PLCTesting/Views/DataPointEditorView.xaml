@@ -81,8 +81,14 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTextColumn Header="描述" Width="*" Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                    <DataGridCheckBoxColumn Header="入库" Width="64" Binding="{Binding LogToDb, Mode=TwoWay}"/>
-                    <DataGridCheckBoxColumn Header="发 MQTT" Width="82" Binding="{Binding PublishMqtt, Mode=TwoWay}"/>
+                    <!-- 勾选列必须显式给 ElementStyle：DataGridCheckBoxColumn 自带的 ElementStyle 会覆盖
+                         隐式 CheckBox 样式，深色主题下会露出系统白方块 -->
+                    <DataGridCheckBoxColumn Header="入库" Width="64" Binding="{Binding LogToDb, Mode=TwoWay}"
+                                            ElementStyle="{StaticResource GridCheckBox}"
+                                            EditingElementStyle="{StaticResource GridCheckBox}"/>
+                    <DataGridCheckBoxColumn Header="发 MQTT" Width="82" Binding="{Binding PublishMqtt, Mode=TwoWay}"
+                                            ElementStyle="{StaticResource GridCheckBox}"
+                                            EditingElementStyle="{StaticResource GridCheckBox}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

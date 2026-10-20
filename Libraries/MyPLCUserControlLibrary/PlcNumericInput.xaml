@@ -87,6 +87,9 @@
                     <TextBox x:Name="PART_Pending" IsReadOnly="True" FontSize="20" FontWeight="Bold"
                              FontFamily="{StaticResource PlcFontFamily}"
                              HorizontalContentAlignment="Right" Margin="0,0,0,8" Padding="8"
+                             Background="{StaticResource PlcSurfaceAltBrush}"
+                             Foreground="{StaticResource PlcTextBrush}"
+                             CaretBrush="{StaticResource PlcTextBrush}"
                              BorderBrush="{StaticResource PlcBorderBrush}" BorderThickness="1"/>
                     <Grid x:Name="PART_Keys" ShowGridLines="False">
                         <Grid.ColumnDefinitions>

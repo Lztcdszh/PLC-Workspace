@@ -37,7 +37,7 @@ namespace MyPLCUserControlLibrary
             if (double.IsNaN(Height)) Height = 24;
 
             // 默认外观
-            BackgroundBrush = Brushes.LightGray;
+            BackgroundBrush = new SolidColorBrush(Color.FromRgb(58, 58, 58));
             BorderBrush = Brushes.Gray;
             BorderThickness = new Thickness(1);
             CornerRadius = new CornerRadius(3);
@@ -51,7 +51,7 @@ namespace MyPLCUserControlLibrary
 
             // 文本样式
             TextFontSize = 10;
-            TextForeground = Brushes.Black;
+            TextForeground = new SolidColorBrush(Color.FromRgb(232, 232, 232));
             ShowValue = false;
 
             // 初始颜色（未连接时显示默认）
@@ -179,7 +179,7 @@ namespace MyPLCUserControlLibrary
         // 背景画刷
         public static readonly DependencyProperty BackgroundBrushProperty =
             DependencyProperty.Register(nameof(BackgroundBrush), typeof(Brush), typeof(PlcBarIndicator),
-                new PropertyMetadata(Brushes.LightGray));
+                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(58, 58, 58))));
 
         public Brush BackgroundBrush
         {
@@ -256,7 +256,7 @@ namespace MyPLCUserControlLibrary
         // 文本颜色
         public static readonly DependencyProperty TextForegroundProperty =
             DependencyProperty.Register(nameof(TextForeground), typeof(Brush), typeof(PlcBarIndicator),
-                new PropertyMetadata(Brushes.Black));
+                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(232, 232, 232))));
 
         public Brush TextForeground
         {

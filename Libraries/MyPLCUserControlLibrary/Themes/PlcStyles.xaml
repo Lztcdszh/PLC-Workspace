@@ -9,14 +9,16 @@
     <Color x:Key="PlcInfoColor">#909399</Color>
     <Color x:Key="PlcOffColor">#525A66</Color>
 
-    <!-- ============ 文本 / 边框 / 表面 ============ -->
-    <Color x:Key="PlcTextColor">#303133</Color>
-    <Color x:Key="PlcTextSecondaryColor">#909399</Color>
-    <Color x:Key="PlcBorderColor">#DCDFE6</Color>
-    <Color x:Key="PlcSurfaceColor">#FFFFFF</Color>
-    <Color x:Key="PlcSurfaceAltColor">#F5F7FA</Color>
-    <Color x:Key="PlcSurfaceDeepColor">#ECF0F5</Color>
-    <Color x:Key="PlcDarkSurfaceColor">#1F2024</Color>
+    <!-- ============ 文本 / 边框 / 表面（v1.2.0 深色板） ============
+         只改颜色值，键名不变：所有控件（PlcPanel / PlcValueDisplay / PlcTrendControl /
+         PlcAlarmViewer / PlcConnectionStatus 等）无需改动 XAML 即自动变深色。 -->
+    <Color x:Key="PlcTextColor">#E8E8E8</Color>
+    <Color x:Key="PlcTextSecondaryColor">#A6A6A6</Color>
+    <Color x:Key="PlcBorderColor">#303030</Color>
+    <Color x:Key="PlcSurfaceColor">#1F1F1F</Color>
+    <Color x:Key="PlcSurfaceAltColor">#262626</Color>
+    <Color x:Key="PlcSurfaceDeepColor">#2E2E2E</Color>
+    <Color x:Key="PlcDarkSurfaceColor">#141518</Color>
 
     <!-- ============ 画笔 ============ -->
     <SolidColorBrush x:Key="PlcAccentBrush" Color="{StaticResource PlcAccentColor}"/>
@@ -62,6 +64,31 @@
         <Setter Property="CornerRadius" Value="{StaticResource PlcCardRadius}"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="UseLayoutRounding" Value="True"/>
+    </Style>
+
+    <!--
+      ============ TextBox 基线样式（控件库内部隔离用） ============
+      ⚠️ 这个隐式样式是**必需的**，不要删。
+
+      WPF 的隐式样式沿视觉树向上查找：控件内部的 TextBox 在自身 Resources 里找不到
+      TextBox 隐式样式时，会一直找到 Application.Resources。而宿主应用（PLCTesting）
+      的 AppTheme.xaml 定义了全局隐式 `Style TargetType="TextBox"`（Padding=8,5 +
+      自定义模板），于是它**渗入控件内部**，把 PlcNumericInput 的输入框从 28px 撑到
+      48px —— 控件整体需要 62px，而轨道上只给 44~52px，结果就是输入框下半截被裁掉，
+      表现为「数值显示不全」。
+
+      PlcStyles.xaml 被每个控件 merge 到自己的局部 Resources，局部优先于 Application，
+      所以这里定义一份基线样式即可把宿主主题挡在外面。
+      宿主窗口自己的 TextBox 不受影响（它们不在控件内部，仍用 AppTheme 的样式）。
+    -->
+    <Style TargetType="TextBox">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource PlcTextBrush}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource PlcTextBrush}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
 
     <!-- ============ 标题文本 ============ -->

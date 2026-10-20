@@ -1,4 +1,4 @@
-using MyPLCManagerLibrary;
+﻿using MyPLCManagerLibrary;
 using MyPLCManagerLibrary.Interfaces;
 using MyPLCManagerLibrary.Model;
 using System;
@@ -136,7 +136,7 @@ namespace MyPLCUserControlLibrary
         }
 
         public static readonly DependencyProperty ValueForegroundProperty =
-            DependencyProperty.Register(nameof(ValueForeground), typeof(Brush), typeof(PlcValueDisplay), new PropertyMetadata(new SolidColorBrush(Colors.Black)));
+            DependencyProperty.Register(nameof(ValueForeground), typeof(Brush), typeof(PlcValueDisplay), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(232, 232, 232))));
 
         public Brush ValueForeground
         {

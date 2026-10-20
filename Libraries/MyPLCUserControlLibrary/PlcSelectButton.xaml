@@ -1,4 +1,4 @@
-<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcSelectButton"
+﻿<local:PlcControlBase x:Class="MyPLCUserControlLibrary.PlcSelectButton"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,8 +6,8 @@
              xmlns:local="clr-namespace:MyPLCUserControlLibrary"
              mc:Ignorable="d"
              d:DesignHeight="20" d:DesignWidth="56"
-             Background="#ECF0F5"
-             BorderBrush="#C0C4CC"
+             Background="#262626"
+             BorderBrush="#4A4A4A"
              BorderThickness="1"
              Cursor="Hand"
              UseLayoutRounding="True"
@@ -45,7 +45,7 @@
                                           VerticalAlignment="Center"
                                           TextElement.FontSize="{TemplateBinding FontSize}"
                                           TextElement.FontWeight="Bold"
-                                          TextElement.Foreground="#303133"/>
+                                          TextElement.Foreground="#E8E8E8"/>
                         <!-- 按下遮罩层 -->
                         <Border x:Name="Overlay"
                                 Background="#30000000"

@@ -55,13 +55,14 @@ namespace MyPLCUserControlLibrary
 
             Width = 420;
             Height = 260;
-            Background = Brushes.White;
-            BorderBrush = new SolidColorBrush(Color.FromRgb(220, 223, 230));
+            // 深色板：卡片底 #1F1F1F、边框 #303030、网格线 #2A2A2A、坐标轴文字 #A6A6A6
+            Background = new SolidColorBrush(Color.FromRgb(31, 31, 31));
+            BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48));
             BorderThickness = new Thickness(1);
             StrokeBrush = new SolidColorBrush(Color.FromRgb(64, 158, 255));
             StrokeThickness = 2.2;
-            GridBrush = new SolidColorBrush(Color.FromRgb(236, 240, 245));
-            AxisBrush = new SolidColorBrush(Color.FromRgb(144, 147, 153));
+            GridBrush = new SolidColorBrush(Color.FromRgb(42, 42, 42));
+            AxisBrush = new SolidColorBrush(Color.FromRgb(166, 166, 166));
             SamplingInterval = 1000;
             MaxDataPoints = 60;
             MinY = 0;
@@ -136,7 +137,7 @@ namespace MyPLCUserControlLibrary
 
         public static readonly DependencyProperty GridBrushProperty =
             DependencyProperty.Register(nameof(GridBrush), typeof(Brush), typeof(PlcTrendControl),
-                new PropertyMetadata(Brushes.LightGray, (d, e) => ((PlcTrendControl)d).DrawGridAndAxis()));
+                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(42, 42, 42)), (d, e) => ((PlcTrendControl)d).DrawGridAndAxis()));
 
         public Brush GridBrush
         {
@@ -196,7 +197,7 @@ namespace MyPLCUserControlLibrary
 
         public static readonly DependencyProperty BackgroundProperty =
             DependencyProperty.Register(nameof(Background), typeof(Brush), typeof(PlcTrendControl),
-                new PropertyMetadata(Brushes.White));
+                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(31, 31, 31))));
 
         public new Brush Background
         {
@@ -569,7 +570,7 @@ namespace MyPLCUserControlLibrary
             // 胶囊状图例项：圆点 + 名称
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromArgb(20, 0, 0, 0)),
+                Background = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255)),
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(6, 1, 8, 1),
                 Margin = new Thickness(0, 0, 6, 0)
@@ -587,7 +588,7 @@ namespace MyPLCUserControlLibrary
             {
                 Text = name,
                 FontSize = 10,
-                Foreground = new SolidColorBrush(Color.FromRgb(96, 98, 102)),
+                Foreground = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
                 VerticalAlignment = VerticalAlignment.Center
             });
             border.Child = panel;
@@ -1162,7 +1163,7 @@ namespace MyPLCUserControlLibrary
                 Text = "报警 " + FormatValue(AlarmValue),
                 FontSize = 9,
                 Foreground = AlarmBrush,
-                Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+                Background = new SolidColorBrush(Color.FromArgb(240, 38, 38, 38)),
                 Padding = new Thickness(3, 0, 3, 0)
             };
             tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
@@ -1274,7 +1275,7 @@ namespace MyPLCUserControlLibrary
                 {
                     Text = $"{r.name}: {FormatValue(r.value)}",
                     FontSize = 10,
-                    Foreground = new SolidColorBrush(Color.FromRgb(48, 49, 51)),
+                    Foreground = new SolidColorBrush(Color.FromRgb(232, 232, 232)),
                     VerticalAlignment = VerticalAlignment.Center
                 });
                 tipPanel.Children.Add(line);
@@ -1282,8 +1283,8 @@ namespace MyPLCUserControlLibrary
 
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromArgb(245, 255, 255, 255)),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(60, 0, 0, 0)),
+                Background = new SolidColorBrush(Color.FromArgb(245, 31, 31, 31)),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(255, 67, 67, 67)),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(5),
                 Padding = new Thickness(8, 4, 8, 4),

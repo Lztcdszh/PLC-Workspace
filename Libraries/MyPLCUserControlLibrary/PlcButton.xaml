@@ -39,10 +39,11 @@
                         CornerRadius="{TemplateBinding CornerRadius}"
                         SnapsToDevicePixels="True">
                     <Grid>
-                        <!-- 内容呈现器：居中显示 -->
+                        <!-- 内容呈现器：居中显示（深色主题下按钮一律为实心色底，文字取白色保证对比度） -->
                         <ContentPresenter Content="{TemplateBinding Content}"
                                           HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="White"/>
 
                         <!-- 遮罩层：用于按下效果，初始透明 -->
                         <Border x:Name="Overlay"

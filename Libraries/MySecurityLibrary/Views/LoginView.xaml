@@ -1,4 +1,4 @@
-<Window x:Class="MySecurityLibrary.Views.LoginView"
+﻿<Window x:Class="MySecurityLibrary.Views.LoginView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="用户登录"
@@ -19,7 +19,7 @@
 
     <!-- 浅色圆角卡片：与主程序白卡风格一致 -->
     <Border CornerRadius="14" Background="{StaticResource SecSurface}"
-            BorderBrush="{StaticResource SecBorder}" BorderThickness="1" Margin="12">
+            BorderBrush="{StaticResource SecBorderStrong}" BorderThickness="1" Margin="12">
         <Grid Margin="30,26,30,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

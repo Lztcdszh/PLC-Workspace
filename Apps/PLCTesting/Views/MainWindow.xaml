@@ -20,8 +20,8 @@
 
         <!-- 卡片标题栏：淡蓝底，压在白色卡片上做轻分隔 -->
         <LinearGradientBrush x:Key="CardHeaderBrush" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#F4F8FE" Offset="0" />
-            <GradientStop Color="#EAF2FC" Offset="1" />
+            <GradientStop Color="#2A2A2A" Offset="0" />
+            <GradientStop Color="#232323" Offset="1" />
         </LinearGradientBrush>
 
         <Style TargetType="myplc:PlcPanel">
@@ -33,7 +33,7 @@
             <Setter Property="TagName" Value="小车实际位置" />
             <Setter Property="TagAddress" Value="DB1.DBW240" />
             <Setter Property="ActiveBrush" Value="#FF8C00" />
-            <Setter Property="InactiveBrush" Value="#C8CDD6" />
+            <Setter Property="InactiveBrush" Value="#3A3A3A" />
             <Setter Property="Blink" Value="True" />
             <Setter Property="Connection" Value="{Binding RelativeSource={RelativeSource AncestorType=myplc:PlcPanel}, Path=Connection}" />
         </Style>
@@ -276,98 +276,98 @@
                 <myplc:PlcPanel.PanelContent>
                     <Viewbox Stretch="Uniform" Margin="6,2,6,6">
                         <Canvas Width="1960" Height="350">
-                            <Polyline Points="150,84 1960,84 1960,258 150,258" Stroke="#B7C2CF" StrokeThickness="6" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Left" VerticalAlignment="Center" Width="1863" Canvas.Left="10" />
-                            <Ellipse Canvas.Left="133" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="100" Canvas.Top="18" Width="100" Text="负极限位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Polyline Points="150,84 1960,84 1960,258 150,258" Stroke="#4E5A68" StrokeThickness="6" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Left" VerticalAlignment="Center" Width="1863" Canvas.Left="10" />
+                            <Ellipse Canvas.Left="133" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="100" Canvas.Top="18" Width="100" Text="负极限位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcIndicator Canvas.Left="142" Canvas.Top="76" Width="16" Height="16" TagName="负极限位" TagAddress="M4.1" AutoRegister="True" OnBrush="LimeGreen" OffBrush="Red" />
-                            <Ellipse Canvas.Left="317" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="284" Canvas.Top="18" Width="100" Text="充电位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="317" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="284" Canvas.Top="18" Width="100" Text="充电位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="322" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="26" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
                             <myplc:PlcSelectButton Canvas.Left="301" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="26" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="501" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="468" Canvas.Top="18" Width="100" Text="1号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="501" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="468" Canvas.Top="18" Width="100" Text="1号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="506" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="28" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="555" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间29" TagAddress="DB1.DBW302" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="555" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间29" TagAddress="DB1.DBW302" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="485" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="28" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="685" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="652" Canvas.Top="18" Width="100" Text="2号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="685" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="652" Canvas.Top="18" Width="100" Text="2号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="690" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="30" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="739" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间31" TagAddress="DB1.DBW304" DataType="Int16" FormatString="F0" Unit="100ms" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            <myplc:PlcNumericInput Canvas.Left="739" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间31" TagAddress="DB1.DBW304" DataType="Int16" FormatString="F0" HorizontalAlignment="Center" VerticalAlignment="Top" />
                             <myplc:PlcSelectButton Canvas.Left="669" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="30" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="869" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="836" Canvas.Top="18" Width="100" Text="3号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="869" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="836" Canvas.Top="18" Width="100" Text="3号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="874" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="32" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="923" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间33" TagAddress="DB1.DBW306" DataType="Int16" FormatString="F0" Unit="100ms" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <myplc:PlcNumericInput Canvas.Left="923" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间33" TagAddress="DB1.DBW306" DataType="Int16" FormatString="F0" HorizontalAlignment="Left" VerticalAlignment="Center" />
                             <myplc:PlcSelectButton Canvas.Left="853" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="32" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1053" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1020" Canvas.Top="18" Width="100" Text="4号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1053" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1020" Canvas.Top="18" Width="100" Text="4号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1058" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="34" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1107" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间35" TagAddress="DB1.DBW308" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1107" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间35" TagAddress="DB1.DBW308" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1037" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="34" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1237" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1204" Canvas.Top="18" Width="100" Text="5号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1237" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1204" Canvas.Top="18" Width="100" Text="5号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1242" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="36" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1291" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间37" TagAddress="DB1.DBW310" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1291" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间37" TagAddress="DB1.DBW310" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1221" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="36" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1421" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1388" Canvas.Top="18" Width="100" Text="6号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1421" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1388" Canvas.Top="18" Width="100" Text="6号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1426" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="38" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1487" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间39" TagAddress="DB1.DBW312" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1487" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间39" TagAddress="DB1.DBW312" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1405" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="38" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1605" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1572" Canvas.Top="18" Width="100" Text="7号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1605" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1572" Canvas.Top="18" Width="100" Text="7号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1610" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="40" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1659" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间41" TagAddress="DB1.DBW314" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1659" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间41" TagAddress="DB1.DBW314" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1589" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="40" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1789" Canvas.Top="67" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1756" Canvas.Top="18" Width="100" Text="8号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1789" Canvas.Top="67" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1756" Canvas.Top="18" Width="100" Text="8号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1794" Canvas.Top="72" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="42" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1840" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间43" TagAddress="DB1.DBW316" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1840" Canvas.Top="36" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间43" TagAddress="DB1.DBW316" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1773" Canvas.Top="118" Width="66" Height="32" ButtonText="选定" WriteValue="42" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1789" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1756" Canvas.Top="192" Width="100" Text="9号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1789" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1756" Canvas.Top="192" Width="100" Text="9号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1794" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="44" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1659" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间45" TagAddress="DB1.DBW318" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1659" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间45" TagAddress="DB1.DBW318" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1773" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="44" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1605" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1572" Canvas.Top="192" Width="100" Text="10号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1605" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1572" Canvas.Top="192" Width="100" Text="10号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1610" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="46" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1487" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间47" TagAddress="DB1.DBW320" DataType="Int16" FormatString="F0" Unit="100ms" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            <myplc:PlcNumericInput Canvas.Left="1487" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间47" TagAddress="DB1.DBW320" DataType="Int16" FormatString="F0" HorizontalAlignment="Center" VerticalAlignment="Top" />
                             <myplc:PlcSelectButton Canvas.Left="1589" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="46" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1421" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1388" Canvas.Top="192" Width="100" Text="11号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1421" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1388" Canvas.Top="192" Width="100" Text="11号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1426" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="48" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1291" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间49" TagAddress="DB1.DBW322" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1291" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间49" TagAddress="DB1.DBW322" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1405" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="48" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1237" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1204" Canvas.Top="192" Width="100" Text="12号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1237" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1204" Canvas.Top="192" Width="100" Text="12号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1242" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="50" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="1107" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间51" TagAddress="DB1.DBW324" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="1107" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间51" TagAddress="DB1.DBW324" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1221" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="50" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="1053" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="1020" Canvas.Top="192" Width="100" Text="13号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="1053" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="1020" Canvas.Top="192" Width="100" Text="13号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="1058" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="52" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="925" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间53" TagAddress="DB1.DBW326" DataType="Int16" FormatString="F0" Unit="100ms" />
+                            <myplc:PlcNumericInput Canvas.Left="925" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间53" TagAddress="DB1.DBW326" DataType="Int16" FormatString="F0" />
                             <myplc:PlcSelectButton Canvas.Left="1037" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="52" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="869" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="836" Canvas.Top="192" Width="100" Text="14号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="869" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="836" Canvas.Top="192" Width="100" Text="14号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="874" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="54" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="739" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间55" TagAddress="DB1.DBW328" DataType="Int16" FormatString="F0" Unit="100ms" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            <myplc:PlcNumericInput Canvas.Left="739" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间55" TagAddress="DB1.DBW328" DataType="Int16" FormatString="F0" HorizontalAlignment="Center" VerticalAlignment="Top" />
                             <myplc:PlcSelectButton Canvas.Left="853" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="54" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="685" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="652" Canvas.Top="192" Width="100" Text="15号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="685" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="652" Canvas.Top="192" Width="100" Text="15号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="690" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="56" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
-                            <myplc:PlcNumericInput Canvas.Left="555" Canvas.Top="206" Width="110" Height="52" Label="降速时间" TagName="降速时间57" TagAddress="DB1.DBW330" DataType="Int16" FormatString="F0" Unit="100ms" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            <myplc:PlcNumericInput Canvas.Left="555" Canvas.Top="210" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间57" TagAddress="DB1.DBW330" DataType="Int16" FormatString="F0" HorizontalAlignment="Center" VerticalAlignment="Top" />
                             <myplc:PlcSelectButton Canvas.Left="669" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="56" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="501" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="468" Canvas.Top="192" Width="100" Text="16号位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="501" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="468" Canvas.Top="192" Width="100" Text="16号位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
                             <myplc:PlcRangeIndicator Canvas.Left="506" Canvas.Top="246" Width="24" Height="24" TagName="小车实际位置" TagAddress="DB1.DBW240" DataType="UInt16" Condition="Equal" CompareValue="58" TrueBrush="#67C23A" FalseBrush="#F56C6C" />
                             <myplc:PlcSelectButton Canvas.Left="485" Canvas.Top="292" Width="66" Height="32" ButtonText="选定" WriteValue="58" WriteTagAddress="DB1.DBW250" WriteTagName="小车设定位置" />
-                            <Ellipse Canvas.Left="317" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="284" Canvas.Top="192" Width="100" Text="" FontSize="13" FontWeight="Bold" Foreground="#303133" TextAlignment="Center" />
-                            <myplc:PlcNumericInput Canvas.Left="371" Canvas.Top="32" Width="110" Height="52" Label="降速时间" TagName="降速时间61" TagAddress="DB1.DBW300" DataType="Int16" FormatString="F0" Unit="100ms" />
-                            <Ellipse Canvas.Left="133" Canvas.Top="241" Width="34" Height="34" Fill="#F4F8FE" Stroke="#409EFF" StrokeThickness="2" />
-                            <TextBlock Canvas.Left="100" Canvas.Top="192" Width="100" Text="正极限位" FontSize="13" FontWeight="SemiBold" Foreground="#303133" TextAlignment="Center" />
+                            <Ellipse Canvas.Left="317" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="284" Canvas.Top="192" Width="100" Text="" FontSize="13" FontWeight="Bold" Foreground="#E8E8E8" TextAlignment="Center" />
+                            <myplc:PlcNumericInput Canvas.Left="367" Canvas.Top="40" Width="118" Height="44" Label="降速时间(0.1s)" TagName="降速时间61" TagAddress="DB1.DBW300" DataType="Int16" FormatString="F0" />
+                            <Ellipse Canvas.Left="133" Canvas.Top="241" Width="34" Height="34" Fill="#262626" Stroke="#409EFF" StrokeThickness="2" />
+                            <TextBlock Canvas.Left="100" Canvas.Top="192" Width="100" Text="正极限位" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" TextAlignment="Center" />
 
                             <myplc:PlcIndicator Canvas.Left="142" Canvas.Top="250" Width="16" Height="16" TagName="正极限位" TagAddress="M4.2" AutoRegister="True" OnBrush="LimeGreen" OffBrush="Red" HorizontalAlignment="Left" VerticalAlignment="Center" />
                             <myplc:PlcStatusBar Canvas.Left="351" Canvas.Top="80" Width="150" Height="8" Orientation="Horizontal" BarHeight="8" CornerRadius="4" TagName="小车实际位置" TagAddress="DB1.DBW240" ActiveValue="27" Blink="True" Connection="{Binding RelativeSource={RelativeSource AncestorType=myplc:PlcPanel}, Path=Connection}" />
