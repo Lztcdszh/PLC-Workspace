@@ -14,6 +14,7 @@ using System.Windows;
 using MyPLCManagerLibrary;
 using MyPLCManagerLibrary.Interfaces;
 using MyPLCManagerLibrary.Model;
+using MyPLCFoundationLibrary.Logging;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Protocol;
@@ -40,6 +41,17 @@ namespace PLCTesting.Services
         private readonly IDataPointSource _registry;
         private readonly MqttFactory _factory = new();
         private IMqttClient _client;
+
+        /// <summary>
+        /// 本进程固定的 MQTT ClientId。含机器名 + 随机后缀：
+        /// 机器名让 broker 端直接看出是哪台电脑；后缀避免同机多实例互踢；
+        /// 进程内保持不变，重连后仍是同一个 ID，便于在 broker 端识别“这台一直在重连”。
+        /// </summary>
+        private readonly string _clientId =
+            $"PLCTesting_{Environment.MachineName}_{Guid.NewGuid():N}";
+
+        /// <summary>MQTT 相关异常统一写入结构化日志（%LocalAppData%\PLCTesting\Logs）。</summary>
+        private static IAppLogger Log => StructuredLogger.Current.ForContext("Mqtt");
 
         private bool _isRunning;
         private bool _isConnected;
@@ -130,10 +142,16 @@ namespace PLCTesting.Services
                     var cfg = JsonSerializer.Deserialize<MqttConfig>(json, JsonOptions);
                     if (cfg != null) Config = cfg;
                 }
+                Log.Information(
+                    "配置加载 ConfigPath={ConfigPath} Exists={Exists} Enabled={Enabled} Broker={Broker}:{Port} BaseTopic={BaseTopic} Mode={Mode} IntervalMs={Interval}",
+                    ConfigPath, File.Exists(ConfigPath), Config.Enabled,
+                    Config.BrokerHost, Config.BrokerPort, Config.BaseTopic,
+                    Config.PublishMode, Config.PublishIntervalMs);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[Mqtt] 加载配置失败: {ex.Message}");
+                Log.Error(ex, "加载 MQTT 配置失败 ConfigPath={ConfigPath}", ConfigPath);
             }
         }
 
@@ -143,11 +161,14 @@ namespace PLCTesting.Services
             {
                 var json = JsonSerializer.Serialize(Config, JsonOptions);
                 File.WriteAllText(ConfigPath, json);
+                Log.Information("配置已保存 Enabled={Enabled} Broker={Broker}:{Port} BaseTopic={BaseTopic}",
+                    Config.Enabled, Config.BrokerHost, Config.BrokerPort, Config.BaseTopic);
             }
             catch (Exception ex)
             {
                 LastError = $"保存配置失败：{ex.Message}";
                 Debug.WriteLine(LastError);
+                Log.Error(ex, "保存 MQTT 配置失败 ConfigPath={ConfigPath}", ConfigPath);
             }
         }
 
@@ -163,6 +184,8 @@ namespace PLCTesting.Services
             _isRunning = true;
             PeriodicRoundCount = 0;
             StatusText = Config.Enabled ? "正在连接 MQTT Broker…" : "已就绪（未启用）";
+            Log.Information("MQTT 发布服务启动 Enabled={Enabled} Broker={Host}:{Port} BaseTopic={BaseTopic} ClientId={ClientId}",
+                Config.Enabled, Config.BrokerHost, Config.BrokerPort, Config.BaseTopic, _clientId);
             if (Config.Enabled)
             {
                 _connection.TagValueChanged += OnTagValueChanged;
@@ -213,31 +236,141 @@ namespace PLCTesting.Services
         {
             var builder = new MqttClientOptionsBuilder()
                 .WithTcpServer(config.BrokerHost, config.BrokerPort)
-                .WithClientId($"PLCTesting_{Environment.MachineName}_{Guid.NewGuid():N}");
+                .WithClientId(_clientId);
 
             return builder.Build();
         }
 
         private MqttClientOptions BuildOptions() => BuildOptions(Config);
 
+        /// <summary>
+        /// 串行化所有 ConnectAsync 调用。
+        /// ⚠️ MQTTnet 的同一个 IMqttClient 不允许并发 Connect（会抛 InvalidOperationException），
+        /// 而"首次重试循环"与"断线重连循环"天然可能同时发起连接，必须用锁排队。
+        /// </summary>
+        private readonly SemaphoreSlim _connectLock = new(1, 1);
+
+        /// <summary>是否正处在首轮连接重试中（此时由重试循环负责，断线事件不再另起重连循环）。</summary>
+        private bool _initialConnecting;
+
+        /// <summary>重连循环是否已在运行（0=无，1=有）。用 Interlocked 保证全局只有一条。</summary>
+        private int _reconnectRunning;
+
+        /// <summary>串行执行一次连接尝试。</summary>
+        private async Task ConnectOnceAsync(MqttClientOptions options)
+        {
+            await _connectLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                await _client.ConnectAsync(options, CancellationToken.None).ConfigureAwait(false);
+            }
+            finally
+            {
+                _connectLock.Release();
+            }
+        }
+
         private async Task ConnectWithRetryAsync(int maxAttempts = 5)
         {
-            for (int i = 1; i <= maxAttempts; i++)
+            if (!Config.Enabled)
             {
-                if (_stopRequested) return;
-                try
+                Log.Information("MQTT 未启用（Enabled=false），不发起连接");
+                return;
+            }
+
+            var lastEx = (Exception)null;
+            _initialConnecting = true;
+            try
+            {
+                for (int i = 1; i <= maxAttempts; i++)
                 {
-                    await _client.ConnectAsync(BuildOptions(), CancellationToken.None);
-                    return; // ConnectedAsync 会更新状态
-                }
-                catch (Exception ex)
-                {
-                    LastError = $"第 {i} 次连接失败：{ex.Message}";
-                    StatusText = LastError;
-                    if (i < maxAttempts)
-                        await Task.Delay(2000);
+                    if (_stopRequested) return;
+                    try
+                    {
+                        Log.Information("第 {Attempt}/{Total} 次连接 MQTT Broker {Host}:{Port} ClientId={ClientId}",
+                            i, maxAttempts, Config.BrokerHost, Config.BrokerPort, _clientId);
+                        await ConnectOnceAsync(BuildOptions()).ConfigureAwait(false);
+                        return; // ConnectedAsync 会更新状态
+                    }
+                    catch (Exception ex)
+                    {
+                        lastEx = ex;
+                        LastError = $"第 {i} 次连接失败：{ex.Message}";
+                        StatusText = LastError;
+                        Log.Warning(ex,
+                            "第 {Attempt}/{Total} 次连接 MQTT Broker 失败 Host={Host} Port={Port} ClientId={ClientId} 错误类型={ErrorType}",
+                            i, maxAttempts, Config.BrokerHost, Config.BrokerPort, _clientId,
+                            ex.GetType().Name);
+                        if (i < maxAttempts)
+                            await Task.Delay(2000).ConfigureAwait(false);
+                    }
                 }
             }
+            finally
+            {
+                _initialConnecting = false;
+            }
+
+            if (_stopRequested || _client.IsConnected) return;
+
+            // 全部重试都失败：这是“连不上 MQTT”的最终态，必须留下明确日志
+            Log.Error(lastEx,
+                "MQTT 连接彻底失败，已重试 {Total} 次 Host={Host} Port={Port} ClientId={ClientId}。转入后台低频重连（每 3 秒一次，全局仅一条）；排查方向：域名解析 / 出站端口被拦 / 配置指向错误 / broker 不可用",
+                maxAttempts, Config.BrokerHost, Config.BrokerPort, _clientId);
+
+            // 交给统一的重连循环继续尝试（而不是就此不再管）
+            StartReconnectLoop();
+        }
+
+        /// <summary>
+        /// 启动唯一的一条后台重连循环（每 3 秒一次）。
+        /// ⚠️ 必须防重入：OnMqttDisconnected 在每次连接失败时都会触发，
+        /// 若每次都 Task.Run 一条循环，会叠加出无数条并发循环（曾实测 20 秒内出现多条），
+        /// 既会把 broker/隧道打进限速，也会让多个 ConnectAsync 撞在一起抛 InvalidOperationException
+        /// 而永远连不上。用 Interlocked 保证同一时刻只有一条循环。
+        /// </summary>
+        private void StartReconnectLoop()
+        {
+            if (Interlocked.CompareExchange(ref _reconnectRunning, 1, 0) != 0)
+                return; // 已有一条在跑，直接复用
+
+            _ = Task.Run(async () =>
+            {
+                int attempt = 0;
+                try
+                {
+                    while (!_stopRequested && !_disposed && !_client.IsConnected)
+                    {
+                        await Task.Delay(3000).ConfigureAwait(false);
+                        if (_stopRequested || _disposed || _client.IsConnected) break;
+
+                        attempt++;
+                        StatusText = "正在尝试重连 MQTT Broker…";
+                        try
+                        {
+                            await ConnectOnceAsync(BuildOptions()).ConfigureAwait(false);
+                            break; // 成功由 OnMqttConnected 处理
+                        }
+                        catch (Exception ex)
+                        {
+                            LastError = $"重连失败：{ex.Message}";
+                            StatusText = LastError;
+                            // 只在第 1、2、3、5、10、30、60… 次记录，避免刷爆日志
+                            if (attempt <= 3 || attempt == 5 || attempt == 10 || attempt % 30 == 0)
+                            {
+                                Log.Warning(ex,
+                                    "MQTT 第 {Attempt} 次重连失败 Host={Host} Port={Port} ClientId={ClientId} 错误类型={ErrorType}",
+                                    attempt, Config.BrokerHost, Config.BrokerPort, _clientId,
+                                    ex.GetType().Name);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _reconnectRunning, 0);
+                }
+            });
         }
 
         private Task OnMqttConnected(MqttClientConnectedEventArgs e)
@@ -245,6 +378,8 @@ namespace PLCTesting.Services
             IsConnected = true;
             LastError = "";
             StatusText = $"已连接 {Config.BrokerHost}:{Config.BrokerPort}";
+            Log.Information("MQTT 已连接 Broker={Host}:{Port} ClientId={ClientId} ResultCode={ResultCode}",
+                Config.BrokerHost, Config.BrokerPort, _clientId, e.ConnectResult?.ResultCode);
             // 连接/重连后发布一次当前快照，确保订阅端拿到最新值
             _ = PublishAllSelectedAsync();
             // 按配置启动定时发布循环（变化触发仍在 OnTagValueChanged 内独立生效）
@@ -263,26 +398,14 @@ namespace PLCTesting.Services
             }
 
             StatusText = $"连接断开（{e.Reason}），正在后台重连…";
-            _ = Task.Run(async () =>
-            {
-                while (!_stopRequested && !_disposed)
-                {
-                    try
-                    {
-                        await Task.Delay(3000);
-                        if (_stopRequested) break;
-                        if (_client.IsConnected) break;
-                        StatusText = "正在尝试重连 MQTT Broker…";
-                        await _client.ConnectAsync(BuildOptions(), CancellationToken.None);
-                        break; // 成功由 OnMqttConnected 处理
-                    }
-                    catch (Exception ex)
-                    {
-                        LastError = $"重连失败：{ex.Message}";
-                        StatusText = LastError;
-                    }
-                }
-            });
+            Log.Warning(e.Exception,
+                "MQTT 连接断开 Reason={Reason} ClientId={ClientId} 将对同一 Broker 每 3 秒重连一次",
+                e.Reason, _clientId);
+
+            // 首轮重试期间由 ConnectWithRetryAsync 自己负责重试，这里不另起循环，避免两套重试互相踩踏
+            if (!_initialConnecting)
+                StartReconnectLoop();
+
             return Task.CompletedTask;
         }
 
@@ -487,6 +610,8 @@ namespace PLCTesting.Services
             {
                 LastError = $"发布 {name} 失败：{ex.Message}";
                 Debug.WriteLine(LastError);
+                Log.Warning(ex, "发布标签失败 Tag={Tag} Address={Address} Topic={Topic}",
+                    name, address, $"{Config.BaseTopic.Trim('/')}/{address}");
             }
         }
 
@@ -504,11 +629,15 @@ namespace PLCTesting.Services
                 await testClient.ConnectAsync(opts, CancellationToken.None);
                 var ok = testClient.IsConnected;
                 if (ok) await testClient.DisconnectAsync();
+                Log.Information("测试连接成功 Broker={Host}:{Port} ClientId={ClientId}",
+                    Config.BrokerHost, Config.BrokerPort, _clientId);
                 return ok;
             }
             catch (Exception ex)
             {
                 LastError = $"测试连接失败：{ex.Message}";
+                Log.Warning(ex, "测试连接失败 Broker={Host}:{Port} ClientId={ClientId} 错误类型={ErrorType}",
+                    Config.BrokerHost, Config.BrokerPort, _clientId, ex.GetType().Name);
                 return false;
             }
         }
@@ -523,11 +652,15 @@ namespace PLCTesting.Services
                 await testClient.ConnectAsync(opts, CancellationToken.None);
                 var ok = testClient.IsConnected;
                 if (ok) await testClient.DisconnectAsync();
+                Log.Information("测试连接成功 Broker={Host}:{Port} ClientId={ClientId}",
+                    testConfig.BrokerHost, testConfig.BrokerPort, _clientId);
                 return ok;
             }
             catch (Exception ex)
             {
                 LastError = $"测试连接失败：{ex.Message}";
+                Log.Warning(ex, "测试连接失败 Broker={Host}:{Port} ClientId={ClientId} 错误类型={ErrorType}",
+                    testConfig.BrokerHost, testConfig.BrokerPort, _clientId, ex.GetType().Name);
                 return false;
             }
         }

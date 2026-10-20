@@ -54,6 +54,33 @@ namespace PLCTesting
         private bool _forceClose;
 
         /// <summary>
+        /// 结构化日志必须在"任何业务对象被创建之前"初始化，所以放在实例构造函数里。
+        /// ⚠️ 不能放在 OnInitialized：Prism 的 CreateShell() 早于它执行，而 CreateShell 会
+        /// 解析 MainWindow → MainWindowViewModel → MqttPublisherService 等一堆服务对象；
+        /// 一旦这些对象在初始化前写了日志，StructuredLogger 内部的 Lazy&lt;IAppLogger&gt;
+        /// 会先用**默认配置**惰性初始化并永久定格，之后 Init(真实配置) 再也改不动它，
+        /// 结果是所有日志（含 TagService、变更记录）都写不到 plctesting-*.log 里。
+        /// </summary>
+        public App()
+        {
+            try
+            {
+                StructuredLogger.Init(new LogConfig
+                {
+                    AppName = "PLCTesting",
+                    FileNamePrefix = "plctesting",
+                    ConsoleEnabled = false,
+                    MinLevel = AppLogLevel.Information,
+                    RetainedFileCountLimit = 31
+                });
+            }
+            catch
+            {
+                // 日志初始化失败不能阻碍软件启动（会退化为无日志，但界面可用）
+            }
+        }
+
+        /// <summary>
         /// 本次是否以"后台方式"启动：不带主窗口、不弹登录框，只在托盘里安静运行。
         /// 唯一判定来源：命令行带了 --background / --silent（开机自启动项固定带这个参数）。
         /// 正常双击图标 / 开始菜单不带参数 → 一定走登录 + 显示主窗口。
@@ -95,16 +122,8 @@ namespace PLCTesting
             //   登录成功后才 Show()；后台启动则始终不 Show()，只留托盘图标。
             // （此前"未显示主窗口"的日志写在 base 调用之后，具有误导性，实际窗口早已被 base 弹出。）
 
-            // —— P0 结构化日志初始化（放在最早，确保登录/启动/退出全过程被记录）——
+            // —— 结构化日志已在 App() 构造函数中初始化（早于 CreateShell 创建的任何服务对象）——
             // 上位机属"服务式"运行，不输出控制台；按天滚动、保留 31 天。
-            StructuredLogger.Init(new LogConfig
-            {
-                AppName = "PLCTesting",
-                FileNamePrefix = "plctesting",
-                ConsoleEnabled = false,
-                MinLevel = AppLogLevel.Information,
-                RetainedFileCountLimit = 31
-            });
             var lifecycle = StructuredLogger.Current.ForContext("Lifecycle");
             lifecycle.Information(
                 "软件启动 StartTime={StartTime} Version={Version} Machine={Machine}",
