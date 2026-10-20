@@ -87,8 +87,12 @@
                     <TextBlock Margin="22,2,0,0" FontSize="10" Foreground="#909399" TextWrapping="Wrap"
                                Text="不勾「自动安装」＝只提示、由你确认后再装。程序未以管理员身份运行时，安装步骤会弹一次系统授权框（UAC），这是 Windows 的限制，无法绕过。" />
 
+                    <!-- ⚠️ 必须显式 Mode=OneWay：ProgressBar.Value 是 WPF 默认双向的依赖属性，
+                         而 Update.DownloadProgress 只有 private set。不写 Mode 会在
+                         绑定挂载时抛 InvalidOperationException，窗口 ShowDialog 中途炸掉
+                         （实报 1.1.7「点系统设置就卡死」，事件日志 0xe0434352 崩溃）。 -->
                     <ProgressBar Height="6" Margin="0,8,0,0" Minimum="0" Maximum="100"
-                                 Value="{Binding Update.DownloadProgress}"
+                                 Value="{Binding Update.DownloadProgress, Mode=OneWay}"
                                  Visibility="{Binding Update.IsDownloading, Converter={StaticResource BoolToVis}}" />
 
                     <Border Background="#F2F6FC" CornerRadius="4" Padding="8,6" Margin="0,8,0,0">

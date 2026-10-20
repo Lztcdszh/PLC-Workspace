@@ -13,6 +13,9 @@ namespace PLCTesting.Views
         {
             InitializeComponent();
             DataContext = new SystemSettingsViewModel(store, startup);
+
+            // 关闭时摘掉挂在 UpdateService 单例上的事件，否则窗口/VM 会被永久持有
+            Closed += (s, e) => (DataContext as SystemSettingsViewModel)?.Detach();
         }
     }
 }

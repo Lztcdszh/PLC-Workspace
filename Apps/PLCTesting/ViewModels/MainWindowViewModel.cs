@@ -1,4 +1,5 @@
-﻿using MyPLCManagerLibrary;
+﻿using MyPLCFoundationLibrary.Logging;
+using MyPLCManagerLibrary;
 using MyPLCManagerLibrary.Interfaces;
 using MyPLCManagerLibrary.Model;
 using MySecurityLibrary.Models;
@@ -166,11 +167,35 @@ namespace PLCTesting.ViewModels
 
         private void ExecuteOpenSystemSettings()
         {
-            var window = new SystemSettingsView
+            // ⚠️ ShowDialog 会把 Owner（主窗口）临时置为 IsEnabled=false。
+            // 一旦窗口在显示过程中抛异常（1.1.7 实报：ProgressBar 双向绑只读属性 → 崩溃），
+            // Owner 就再也不会被恢复，表现为"点了系统设置，主界面全灰没反应"。
+            // 所以这里必须兜住异常并显式把 Owner 恢复可用。
+            Window window = null;
+            try
             {
-                Owner = Application.Current?.MainWindow
-            };
-            window.ShowDialog();
+                window = new SystemSettingsView
+                {
+                    Owner = Application.Current?.MainWindow
+                };
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                var owner = Application.Current?.MainWindow;
+                if (owner != null) owner.IsEnabled = true;
+                StructuredLogger.Current.ForContext("SystemSettings")
+                    .Error(ex, "打开系统设置窗口失败");
+                MessageBox.Show(
+                    "打开系统设置失败：" + ex.Message,
+                    "系统设置",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            finally
+            {
+                if (window != null) { try { window.Close(); } catch { } }
+            }
         }
 
         private void ExecuteOpenDataPointEditor()

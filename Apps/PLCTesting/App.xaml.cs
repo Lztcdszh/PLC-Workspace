@@ -80,6 +80,63 @@ namespace PLCTesting
             {
                 // 日志初始化失败不能阻碍软件启动（会退化为无日志，但界面可用）
             }
+
+            SetupGlobalExceptionGuard();
+        }
+
+        /// <summary>
+        /// 全局异常兜底。上位机是"服务式"长期运行的程序：任何一次未捕获异常都会让
+        /// 进程静默消失（现场表现为"点了没反应"/"卡死"，且日志里什么都没有），
+        /// 对生产监控是不可接受的。这里统一做到：写日志 → 界面提示 → 尽量活下去。
+        /// <para>
+        /// 该兜底是 2026-10-20 实报缺陷「点系统设置就卡死」的补强：
+        /// 真实原因是 <c>ProgressBar.Value</c> 绑定了只读属性（默认双向）导致
+        /// <c>InvalidOperationException</c>，ShowDialog 中途抛出 → 进程崩溃（事件日志
+        /// <c>0xe0434352</c>）。绑定类异常往往只在特定窗口首次打开时触发，
+        /// 没有兜底就只能靠猜。
+        /// </para>
+        /// </summary>
+        private void SetupGlobalExceptionGuard()
+        {
+            DispatcherUnhandledException += (s, e) =>
+            {
+                var log = TryGetLog("Crash");
+                try { log.Error(e.Exception, "UI 线程未处理异常（已拦截，程序继续运行）"); } catch { }
+
+                e.Handled = true;
+                try
+                {
+                    System.Windows.MessageBox.Show(
+                        "程序内部发生了一个错误，刚才的操作没有完成，但程序会继续运行。\n\n"
+                        + e.Exception.GetType().Name + "：" + e.Exception.Message
+                        + "\n\n详细信息已写入日志（%LocalAppData%\\PLCTesting\\Logs）。",
+                        "PLCTesting 错误",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+                catch { /* 连提示都弹不出来时也不能再抛 */ }
+            };
+
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                // 非 UI 线程且无人接住 → 进程必然终止，唯一能做的是留下遗言
+                var log = TryGetLog("Crash");
+                try { log.Fatal(e.ExceptionObject as Exception, "后台线程未处理异常（进程将终止）"); } catch { }
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                var log = TryGetLog("Crash");
+                try { log.Error(e.Exception, "未观察到的 Task 异常"); } catch { }
+                e.SetObserved();
+            };
+        }
+
+        /// <summary>取日志器时再包一层：崩溃路径上连日志都不能成为新的崩溃源。</summary>
+        private static IAppLogger TryGetLog(string context)
+        {
+            try { return StructuredLogger.Current.ForContext(context); }
+            catch { return null; }
         }
 
         /// <summary>

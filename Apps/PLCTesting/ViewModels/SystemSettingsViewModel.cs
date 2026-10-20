@@ -84,7 +84,9 @@ namespace PLCTesting.ViewModels
             _autoStartOnBoot = _store.Current.AutoStartOnBoot;
 
             // Update 自己改 Mode 时，本 VM 的两个派生属性要跟着刷新
-            Update.PropertyChanged += (s, e) =>
+            // ⚠️ 用字段保存这个委托：UpdateService.Default 是进程单例，用匿名 lambda 挂上去
+            // 就再也摘不下来 —— 每开一次设置窗口就永久泄漏一个 ViewModel + 整个窗口视觉树。
+            _updateChanged = (s, e) =>
             {
                 if (e.PropertyName == nameof(UpdateService.Mode) || string.IsNullOrEmpty(e.PropertyName))
                 {
@@ -92,6 +94,7 @@ namespace PLCTesting.ViewModels
                     RaisePropertyChanged(nameof(UpdateAutoInstall));
                 }
             };
+            Update.PropertyChanged += _updateChanged;
 
             SaveCommand = new DelegateCommand(ExecuteSave);
             RefreshStatus();
@@ -99,6 +102,14 @@ namespace PLCTesting.ViewModels
             // 打开设置窗口就顺手查一次（已是最新/失败都会把结果显示在状态栏）
             if (Update.Mode != UpdateMode.Off)
                 _ = Update.CheckAsync(false);
+        }
+
+        private readonly System.ComponentModel.PropertyChangedEventHandler _updateChanged;
+
+        /// <summary>窗口关闭时调用：把挂在单例上的事件摘掉，避免 ViewModel/窗口被永久持有。</summary>
+        public void Detach()
+        {
+            Update.PropertyChanged -= _updateChanged;
         }
 
         private void RefreshStatus()
