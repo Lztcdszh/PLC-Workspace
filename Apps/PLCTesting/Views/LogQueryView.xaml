@@ -5,15 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="PLC 变化日志查询"
-        Width="1150"
-        Height="720"
-        MinWidth="900"
-        MinHeight="500"
+        Width="1240"
+        Height="740"
+        MinWidth="1000"
+        MinHeight="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         FontFamily="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif"
         Background="{StaticResource AppPageBg}"
         UseLayoutRounding="True">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
 
     <Grid Margin="20,18,20,0">
         <Grid.RowDefinitions>
@@ -24,67 +28,164 @@
         </Grid.RowDefinitions>
 
         <!-- ===== 页头 ===== -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,14">
-            <Border Style="{StaticResource PageTitleIcon}">
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource PageTitleIcon}">
                 <TextBlock Text="📜" FontSize="16" Foreground="{StaticResource AppAccent}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
-            <StackPanel VerticalAlignment="Center">
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
                 <TextBlock Text="标签变化日志" Style="{StaticResource TxtPageTitle}" />
-                <TextBlock Text="按地址与时间范围检索 PLC 标签的历史变化" Style="{StaticResource TxtSubtitle}" Margin="0,2,0,0" />
+                <TextBlock Text="按地址、关键字与时间范围检索 PLC 标签的历史变化"
+                           Style="{StaticResource TxtSubtitle}" Margin="0,2,0,0" />
             </StackPanel>
-        </StackPanel>
-
-        <!-- ===== 过滤条件 ===== -->
-        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14,12" Margin="0,0,0,12">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="170" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="150" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="150" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="地址" Style="{StaticResource TxtCaption}"
-                           VerticalAlignment="Center" Margin="0,0,8,0" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}" />
-
-                <TextBlock Grid.Column="2" Text="开始" Style="{StaticResource TxtCaption}"
-                           VerticalAlignment="Center" Margin="16,0,8,0" />
-                <DatePicker Grid.Column="3" SelectedDate="{Binding StartTime}" />
-
-                <TextBlock Grid.Column="4" Text="结束" Style="{StaticResource TxtCaption}"
-                           VerticalAlignment="Center" Margin="16,0,8,0" />
-                <DatePicker Grid.Column="5" SelectedDate="{Binding EndTime}" />
-
-                <Button Grid.Column="7" Content="查询" Style="{StaticResource BtnPrimary}" MinWidth="80"
-                        Margin="0,0,8,0" Command="{Binding QueryCommand}" />
-                <Button Grid.Column="8" Content="生成测试数据" Style="{StaticResource BtnSecondary}"
-                        Margin="0,0,8,0" Command="{Binding SeedDemoCommand}" />
-                <Button Grid.Column="9" Content="清空" Style="{StaticResource BtnGhost}"
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="生成测试数据" Style="{StaticResource BtnSecondary}"
+                        Command="{Binding SeedDemoCommand}" Margin="0,0,8,0" />
+                <Button Content="清空日志" Style="{StaticResource BtnGhost}"
                         Foreground="{StaticResource AppDanger}" Command="{Binding ClearAllCommand}" />
-            </Grid>
+            </StackPanel>
+        </Grid>
+
+        <!-- ===== 过滤条件（两行） ===== -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14,12" Margin="0,0,0,12">
+            <StackPanel>
+                <!-- 第一行：地址 + 关键字 + 快捷范围 + 查询 -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="270" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="140" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="地址" Style="{StaticResource TxtCaption}"
+                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding AddressOptions}"
+                              SelectedItem="{Binding SelectedAddressOption}"
+                              DisplayMemberPath="Display"
+                              ToolTip="选项来自数据库里实际出现过的地址，括号内为该地址的记录条数" />
+
+                    <TextBlock Grid.Column="2" Text="关键字" Style="{StaticResource TxtCaption}"
+                               VerticalAlignment="Center" Margin="16,0,8,0" />
+                    <TextBox Grid.Column="3" Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="模糊匹配 标签名 / PLC 地址 / 旧值 / 新值 / 描述；回车即查询">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{Binding QueryCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="16,0,0,0">
+                        <Button Content="最近1小时" Style="{StaticResource BtnGhost}"
+                                Command="{Binding QuickRangeCommand}" CommandParameter="1h" />
+                        <Button Content="今天" Style="{StaticResource BtnGhost}" Margin="4,0,0,0"
+                                Command="{Binding QuickRangeCommand}" CommandParameter="today" />
+                        <Button Content="7天" Style="{StaticResource BtnGhost}" Margin="4,0,0,0"
+                                Command="{Binding QuickRangeCommand}" CommandParameter="7d" />
+                        <Button Content="全部" Style="{StaticResource BtnGhost}" Margin="4,0,0,0"
+                                Command="{Binding QuickRangeCommand}" CommandParameter="all" />
+                    </StackPanel>
+
+                    <Button Grid.Column="5" Content="查询" Style="{StaticResource BtnPrimary}"
+                            MinWidth="80" Margin="16,0,8,0" Command="{Binding QueryCommand}" />
+                    <Button Grid.Column="6" Content="重置" Style="{StaticResource BtnSecondary}"
+                            MinWidth="64" Command="{Binding ResetFiltersCommand}" />
+                </Grid>
+
+                <!-- 第二行：时间范围（精确到分钟）+ 选项 + 导出 -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="128" />
+                        <ColumnDefinition Width="58" />
+                        <ColumnDefinition Width="58" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="128" />
+                        <ColumnDefinition Width="58" />
+                        <ColumnDefinition Width="58" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="开始" Style="{StaticResource TxtCaption}"
+                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <DatePicker Grid.Column="1" SelectedDate="{Binding StartDate}" />
+                    <ComboBox Grid.Column="2" ItemsSource="{Binding Hours}" SelectedItem="{Binding StartHour}"
+                              Margin="6,0,0,0" ToolTip="时" />
+                    <ComboBox Grid.Column="3" ItemsSource="{Binding Minutes}" SelectedItem="{Binding StartMinute}"
+                              Margin="4,0,0,0" ToolTip="分" />
+
+                    <TextBlock Grid.Column="4" Text="~" Style="{StaticResource TxtCaption}"
+                               VerticalAlignment="Center" Margin="10,0,10,0" />
+
+                    <TextBlock Grid.Column="5" Text="结束" Style="{StaticResource TxtCaption}"
+                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <DatePicker Grid.Column="6" SelectedDate="{Binding EndDate}" />
+                    <ComboBox Grid.Column="7" ItemsSource="{Binding Hours}" SelectedItem="{Binding EndHour}"
+                              Margin="6,0,0,0" ToolTip="时" />
+                    <ComboBox Grid.Column="8" ItemsSource="{Binding Minutes}" SelectedItem="{Binding EndMinute}"
+                              Margin="4,0,0,0" ToolTip="分" />
+
+                    <CheckBox Grid.Column="10" Content="只看真正变化" VerticalAlignment="Center"
+                              IsChecked="{Binding ChangedOnly}" Margin="16,0,14,0"
+                              ToolTip="过滤掉「旧值 = 新值」的记录（库里有 0→0 这类噪音）" />
+                    <CheckBox Grid.Column="11" Content="时间正序" VerticalAlignment="Center"
+                              IsChecked="{Binding SortAscending}" Margin="0,0,14,0"
+                              ToolTip="勾选=最早在前；不勾选=最新在前" />
+
+                    <StackPanel Grid.Column="12" Orientation="Horizontal" VerticalAlignment="Center"
+                                Margin="0,0,10,0">
+                        <TextBlock Text="每页" Style="{StaticResource TxtCaption}" VerticalAlignment="Center"
+                                   Margin="0,0,6,0" />
+                        <ComboBox ItemsSource="{Binding PageSizeOptions}" SelectedItem="{Binding SelectedPageSize}"
+                                  Width="78" />
+                    </StackPanel>
+
+                    <Button Grid.Column="13" Content="导出 CSV" Style="{StaticResource BtnSecondary}"
+                            Command="{Binding ExportCommand}"
+                            ToolTip="把当前筛选条件下的全部记录导出（不只是当前页）" />
+                </Grid>
+            </StackPanel>
         </Border>
 
         <!-- ===== 表格 ===== -->
         <Border Grid.Row="2" Style="{StaticResource CardTight}" Padding="1">
-            <DataGrid ItemsSource="{Binding Records}" IsReadOnly="True" CanUserAddRows="False"
-                      CanUserDeleteRows="False">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding TimeStamp, StringFormat=yyyy-MM-dd HH:mm:ss.fff}" Width="190" />
-                    <DataGridTextColumn Header="PLC 地址" Binding="{Binding TagAddress}" Width="130" />
-                    <DataGridTextColumn Header="标签名" Binding="{Binding TagName}" Width="*" />
-                    <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="90" />
-                    <DataGridTextColumn Header="旧值" Binding="{Binding OldValue}" Width="130" />
-                    <DataGridTextColumn Header="新值" Binding="{Binding NewValue}" Width="130" />
-                </DataGrid.Columns>
-            </DataGrid>
+            <Grid>
+                <DataGrid ItemsSource="{Binding Records}" IsReadOnly="True" CanUserAddRows="False"
+                          CanUserDeleteRows="False" AutoGenerateColumns="False"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          SelectionMode="Extended" SelectionUnit="FullRow">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="时间"
+                                            Binding="{Binding TimeStamp, StringFormat=yyyy-MM-dd HH:mm:ss.fff}"
+                                            Width="182" />
+                        <DataGridTextColumn Header="PLC 地址" Binding="{Binding TagAddress}" Width="132" />
+                        <DataGridTextColumn Header="标签名" Binding="{Binding TagName}" Width="150" />
+                        <DataGridTextColumn Header="类型" Binding="{Binding DataType}" Width="76" />
+                        <DataGridTextColumn Header="旧值" Binding="{Binding OldValue}" Width="112" />
+                        <DataGridTextColumn Header="新值" Binding="{Binding NewValue}" Width="112" />
+                        <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- 空结果提示（叠在表格上，避免用户面对一片空白不知道是没数据还是查询失败） -->
+                <TextBlock Text="没有符合条件的记录，试试放宽时间范围或清空关键字"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{StaticResource AppTextFaint}" FontSize="13"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+            </Grid>
         </Border>
 
         <!-- ===== 页脚 ===== -->
@@ -95,11 +196,22 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center"
-                           Style="{StaticResource TxtCaption}" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="上一页" Style="{StaticResource BtnSecondary}" Command="{Binding PrevPageCommand}" />
-                    <Button Content="下一页" Style="{StaticResource BtnSecondary}" Margin="8,0,0,0" Command="{Binding NextPageCommand}" />
+                           Style="{StaticResource TxtCaption}" TextTrimming="CharacterEllipsis" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="首页" Style="{StaticResource BtnGhost}" MinWidth="56"
+                            Command="{Binding FirstPageCommand}" />
+                    <Button Content="上一页" Style="{StaticResource BtnSecondary}" MinWidth="70"
+                            Margin="6,0,0,0" Command="{Binding PrevPageCommand}" />
+                    <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" Margin="12,0"
+                               Foreground="{StaticResource AppTextSub}" FontSize="12" MinWidth="86"
+                               TextAlignment="Center" />
+                    <Button Content="下一页" Style="{StaticResource BtnSecondary}" MinWidth="70"
+                            Margin="0,0,6,0" Command="{Binding NextPageCommand}" />
+                    <Button Content="末页" Style="{StaticResource BtnGhost}" MinWidth="56"
+                            Command="{Binding LastPageCommand}" />
                 </StackPanel>
             </Grid>
         </Border>
