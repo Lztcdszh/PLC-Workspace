@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
@@ -184,8 +186,9 @@ namespace PLCTesting.Services
             _isRunning = true;
             PeriodicRoundCount = 0;
             StatusText = Config.Enabled ? "正在连接 MQTT Broker…" : "已就绪（未启用）";
-            Log.Information("MQTT 发布服务启动 Enabled={Enabled} Broker={Host}:{Port} BaseTopic={BaseTopic} ClientId={ClientId}",
-                Config.Enabled, Config.BrokerHost, Config.BrokerPort, Config.BaseTopic, _clientId);
+            Log.Information("MQTT 发布服务启动 Enabled={Enabled} Broker={Host}:{Port} BaseTopic={BaseTopic} ClientId={ClientId} Tls={Tls}",
+                Config.Enabled, Config.BrokerHost, Config.BrokerPort, Config.BaseTopic, _clientId,
+                Config.UseTls ? (Config.AllowUntrustedCert ? "是(跳过校验)" : "是") : "否");
             if (Config.Enabled)
             {
                 _connection.TagValueChanged += OnTagValueChanged;
@@ -234,9 +237,54 @@ namespace PLCTesting.Services
 
         private MqttClientOptions BuildOptions(MqttConfig config)
         {
+            config ??= new MqttConfig();
+
             var builder = new MqttClientOptionsBuilder()
                 .WithTcpServer(config.BrokerHost, config.BrokerPort)
                 .WithClientId(_clientId);
+
+            if (config.UseTls)
+            {
+                builder.WithTlsOptions(o =>
+                {
+                    o.UseTls();
+                    o.WithSslProtocols(SslProtocols.Tls12 | SslProtocols.Tls13);
+
+                    // 通过 IP 或内网穿透连接时，实际连接地址往往和证书里的域名对不上，
+                    // 会报 "证书名称不匹配"。用 TlsTargetHost 指定校验用的名字即可，
+                    // 不必为此关闭整条校验。
+                    var targetHost = !string.IsNullOrWhiteSpace(config.TlsTargetHost)
+                        ? config.TlsTargetHost.Trim()
+                        : config.BrokerHost;
+                    if (!string.IsNullOrWhiteSpace(targetHost)) o.WithTargetHost(targetHost);
+
+                    if (config.AllowUntrustedCert)
+                    {
+                        // 联调专用：彻底跳过服务端证书校验（自签名证书直接可用）
+                        o.WithAllowUntrustedCertificates(true);
+                        o.WithIgnoreCertificateChainErrors(true);
+                        o.WithIgnoreCertificateRevocationErrors(true);
+                        o.WithCertificateValidationHandler(_ => true);
+                        Log.Warning("TLS 已启用但**跳过服务端证书校验**（AllowUntrustedCert=true）：" +
+                                    "通道仍是加密的，但无法防中间人，仅建议联调阶段使用");
+                    }
+                    else
+                    {
+                        // 提供自签名 CA 时，把它的根证书加入信任链
+                        var ca = CertificateLoader.TryLoad(config.CaCertPath, null, "CA 证书");
+                        if (ca != null)
+                            o.WithTrustChain(new X509Certificate2Collection(ca));
+                        else if (!string.IsNullOrWhiteSpace(config.CaCertPath))
+                            Log.Warning("TLS：CA 证书未能加载，将改用操作系统信任库校验");
+                    }
+
+                    // 双向认证（mTLS）：broker 要求客户端出示证书时必须提供
+                    var clientCert = CertificateLoader.TryLoad(
+                        config.ClientCertPath, config.ClientCertPassword, "客户端证书");
+                    if (clientCert != null)
+                        o.WithClientCertificates(new X509Certificate2Collection(clientCert));
+                });
+            }
 
             return builder.Build();
         }

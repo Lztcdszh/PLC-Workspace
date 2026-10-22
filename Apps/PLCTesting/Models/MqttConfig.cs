@@ -33,8 +33,48 @@ namespace PLCTesting.Models
         /// <summary>Broker 服务器地址或主机名。</summary>
         public string BrokerHost { get; set; } = "127.0.0.1";
 
-        /// <summary>Broker 端口（默认 1883）。</summary>
+        /// <summary>Broker 端口（默认 1883）。启用 TLS 时通常填 8883。</summary>
         public int BrokerPort { get; set; } = 1883;
+
+        #region TLS 加密传输
+
+        /// <summary>
+        /// 是否启用 TLS 加密上传（MQTT over TLS）。
+        /// 关闭时行为与旧版本完全一致（匿名明文 1883）。
+        /// </summary>
+        public bool UseTls { get; set; } = false;
+
+        /// <summary>
+        /// CA 根证书路径（.pem / .crt / .cer）。
+        /// 留空则使用操作系统信任库；broker 用自签名证书时**必须**在这里指定它的 CA，
+        /// 否则会被判为不受信任。
+        /// </summary>
+        public string CaCertPath { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 客户端证书路径（双向认证 mTLS 用，.pfx / .p12 / .pem）。
+        /// 只有 broker 要求"验证客户端证书"时才需要填。
+        /// </summary>
+        public string ClientCertPath { get; set; } = string.Empty;
+
+        /// <summary>客户端证书密码（.pfx/.p12 加密时需要）。</summary>
+        public string ClientCertPassword { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 证书校验用的主机名（SNI / TargetHost）。
+        /// 通过 IP 或内网穿透（花生壳等）连接时，实际连接地址与证书里的域名对不上会报
+        /// "证书名称不匹配" —— 在这里填证书签发的那个域名即可通过校验，无需关闭校验。
+        /// 留空则使用 BrokerHost。
+        /// </summary>
+        public string TlsTargetHost { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 跳过服务端证书校验（允许不受信任证书 / 忽略证书链与吊销检查）。
+        /// ⚠️ 仅用于自签名证书的临时联调，生产环境应改为提供正确的 CA 证书。
+        /// </summary>
+        public bool AllowUntrustedCert { get; set; } = false;
+
+        #endregion
 
         /// <summary>主题前缀，例如 "plc" → 完整主题 "plc/DB1.DBD1012"。</summary>
         public string BaseTopic { get; set; } = "plc";

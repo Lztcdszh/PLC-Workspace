@@ -18,6 +18,8 @@
         <local:BoolToBrushConverter x:Key="BoolToBrush" TrueBrush="#67C23A" FalseBrush="#6E6E6E" />
         <!-- 运行态 → 按钮文案 -->
         <local:BoolToTextConverter x:Key="RunLabel" TrueText="⏹ 停止转发" FalseText="▶ 启动转发" />
+        <!-- 勾选 TLS 后才展开证书配置区 -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
 
     <Grid Margin="20,18,20,0">
@@ -127,6 +129,88 @@
                         <TextBox Grid.Row="2" Grid.Column="1"
                                  Text="{Binding Config.BaseTopic, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
+                </Border>
+
+                <!-- 加密传输（TLS） -->
+                <TextBlock Text="加密传输（TLS）" Style="{StaticResource TxtSection}" />
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" VerticalAlignment="Center"
+                                      Content="启用 TLS 加密上传"
+                                      IsChecked="{Binding UseTls}" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                       Style="{StaticResource TxtCaption}"
+                                       Text="{Binding TlsSummary}" />
+                        </Grid>
+
+                        <StackPanel Visibility="{Binding TlsOptionsVisible, Converter={StaticResource BoolToVis}}">
+                            <Border Style="{StaticResource HintBar}" Margin="0,10,0,12">
+                                <TextBlock Style="{StaticResource TxtCaption}" TextWrapping="Wrap"
+                                           Text="端口一般改成 8883。Broker 用自签名证书时，请在这里指定它的 CA 证书；若证书里的域名与实际连接地址不同（IP 直连或内网穿透），在「校验主机名」填证书签发的那个域名即可，不必关闭校验。" />
+                            </Border>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Label Grid.Row="0" Grid.Column="0" Content="CA 证书" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,6,10"
+                                         Text="{Binding CaCertPath, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="自签名证书必填；留空则使用操作系统信任库" />
+                                <Button Grid.Row="0" Grid.Column="2" Content="浏览" MinWidth="58" Margin="0,0,0,10"
+                                        Style="{StaticResource BtnSecondary}"
+                                        Command="{Binding BrowseCaCertCommand}" />
+
+                                <Label Grid.Row="1" Grid.Column="0" Content="客户端证书" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,6,10"
+                                         Text="{Binding ClientCertPath, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="双向认证（mTLS）才需要，通常为 .pfx / .p12" />
+                                <Button Grid.Row="1" Grid.Column="2" Content="浏览" MinWidth="58" Margin="0,0,0,10"
+                                        Style="{StaticResource BtnSecondary}"
+                                        Command="{Binding BrowseClientCertCommand}" />
+
+                                <Label Grid.Row="2" Grid.Column="0" Content="证书密码" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,6,10"
+                                         Text="{Binding ClientCertPassword, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip=".pfx / .p12 有密码时填写，没有就留空" />
+
+                                <Label Grid.Row="3" Grid.Column="0" Content="校验主机名" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                                         Text="{Binding TlsTargetHost, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="留空 = 用服务器地址校验。证书域名与实际连接地址不一致时填证书里的域名" />
+                            </Grid>
+
+                            <CheckBox Margin="0,12,0,0"
+                                      IsChecked="{Binding AllowUntrustedCert}"
+                                      Content="跳过服务端证书校验（仅联调使用）"
+                                      ToolTip="通道仍然加密，但不验证对端身份，无法防中间人攻击。生产环境请改用正确的 CA 证书。">
+                                <!-- 只在勾选后才变成警示色：常驻橙色会让人误以为已经启用了这个危险选项 -->
+                                <CheckBox.Style>
+                                    <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AllowUntrustedCert}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource AppWarning}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </CheckBox.Style>
+                            </CheckBox>
+                        </StackPanel>
+                    </StackPanel>
                 </Border>
 
                 <!-- 发布方式 -->

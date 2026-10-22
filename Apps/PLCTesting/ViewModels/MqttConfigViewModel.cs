@@ -89,6 +89,104 @@ namespace PLCTesting.ViewModels
 
         #endregion
 
+        #region TLS 加密传输（界面态，写回 Config）
+
+        /// <summary>是否启用 TLS 加密上传。切换时联动证书配置区的显隐。</summary>
+        public bool UseTls
+        {
+            get => Config.UseTls;
+            set
+            {
+                if (Config.UseTls == value) return;
+                Config.UseTls = value;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(TlsOptionsVisible));
+                RaisePropertyChanged(nameof(TlsSummary));
+            }
+        }
+
+        /// <summary>证书相关选项只在勾选 TLS 时显示。</summary>
+        public bool TlsOptionsVisible => Config.UseTls;
+
+        /// <summary>当前加密配置的一句话摘要，显示在标题旁。</summary>
+        public string TlsSummary
+        {
+            get
+            {
+                if (!Config.UseTls) return "未加密（明文传输）";
+                if (Config.AllowUntrustedCert) return "已加密 · 跳过证书校验（联调模式）";
+                var hasCa = !string.IsNullOrWhiteSpace(Config.CaCertPath);
+                var hasClient = !string.IsNullOrWhiteSpace(Config.ClientCertPath);
+                if (hasCa && hasClient) return "已加密 · 自签 CA + 客户端证书（双向认证）";
+                if (hasCa) return "已加密 · 自建 CA 校验";
+                if (hasClient) return "已加密 · 客户端证书（双向认证）";
+                return "已加密 · 使用系统信任库校验";
+            }
+        }
+
+        public string CaCertPath
+        {
+            get => Config.CaCertPath;
+            set
+            {
+                if (Config.CaCertPath == value) return;
+                Config.CaCertPath = value ?? string.Empty;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(TlsSummary));
+            }
+        }
+
+        public string ClientCertPath
+        {
+            get => Config.ClientCertPath;
+            set
+            {
+                if (Config.ClientCertPath == value) return;
+                Config.ClientCertPath = value ?? string.Empty;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(TlsSummary));
+            }
+        }
+
+        public string ClientCertPassword
+        {
+            get => Config.ClientCertPassword;
+            set
+            {
+                if (Config.ClientCertPassword == value) return;
+                Config.ClientCertPassword = value ?? string.Empty;
+                RaisePropertyChanged();
+            }
+        }
+
+        public string TlsTargetHost
+        {
+            get => Config.TlsTargetHost;
+            set
+            {
+                if (Config.TlsTargetHost == value) return;
+                Config.TlsTargetHost = value ?? string.Empty;
+                RaisePropertyChanged();
+            }
+        }
+
+        public bool AllowUntrustedCert
+        {
+            get => Config.AllowUntrustedCert;
+            set
+            {
+                if (Config.AllowUntrustedCert == value) return;
+                Config.AllowUntrustedCert = value;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(TlsSummary));
+            }
+        }
+
+        public DelegateCommand BrowseCaCertCommand { get; }
+        public DelegateCommand BrowseClientCertCommand { get; }
+
+        #endregion
+
         private string _testResult = "";
         public string TestResult
         {
@@ -125,6 +223,27 @@ namespace PLCTesting.ViewModels
             PublishNowCommand = new DelegateCommand(async () => await ExecutePublishNowAsync(),
                 () => _service.IsConnected)
                 .ObservesProperty(() => Service.IsConnected);
+
+            BrowseCaCertCommand = new DelegateCommand(() => BrowseCert(
+                "选择 CA 根证书（服务端证书的签发者）",
+                "证书文件 (*.crt;*.cer;*.pem)|*.crt;*.cer;*.pem|所有文件 (*.*)|*.*",
+                p => CaCertPath = p));
+
+            BrowseClientCertCommand = new DelegateCommand(() => BrowseCert(
+                "选择客户端证书（含私钥，通常为 .pfx/.p12）",
+                "证书文件 (*.pfx;*.p12;*.pem)|*.pfx;*.p12;*.pem|所有文件 (*.*)|*.*",
+                p => ClientCertPath = p));
+        }
+
+        private static void BrowseCert(string title, string filter, Action<string> apply)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                CheckFileExists = true,
+            };
+            if (dialog.ShowDialog() == true) apply(dialog.FileName);
         }
 
         private async Task ExecuteSaveAsync()
@@ -235,7 +354,14 @@ namespace PLCTesting.ViewModels
                 BrokerPort = src.BrokerPort,
                 BaseTopic = src.BaseTopic,
                 PublishMode = src.PublishMode,
-                PublishIntervalMs = src.PublishIntervalMs
+                PublishIntervalMs = src.PublishIntervalMs,
+                // ⚠️ TLS 字段必须一起拷贝：漏掉的话保存后加密配置会被悄悄重置
+                UseTls = src.UseTls,
+                CaCertPath = src.CaCertPath,
+                ClientCertPath = src.ClientCertPath,
+                ClientCertPassword = src.ClientCertPassword,
+                TlsTargetHost = src.TlsTargetHost,
+                AllowUntrustedCert = src.AllowUntrustedCert
             };
         }
     }
